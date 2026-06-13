@@ -587,6 +587,16 @@
       <input class="drink-input" id="drink-type" type="text" placeholder="What are you drinking?" autocomplete="off" autocorrect="off" autocapitalize="sentences" />
       <div class="suggestions" id="suggestions"></div>
     </div>
+    <div class="size-row" id="size-row">
+      <button class="size-pill active" data-size="regular" onclick="selectSize(this)">
+        <span class="pill-label">Regular</span>
+        <span class="pill-sub">1×</span>
+      </button>
+      <button class="size-pill" data-size="double" onclick="selectSize(this)">
+        <span class="pill-label">Double</span>
+        <span class="pill-sub">2× spirit</span>
+      </button>
+    </div>
     <div class="qty-row">
       <button class="qty-btn minus" onclick="changeQty(-1)" aria-label="Decrease">−</button>
       <div class="qty-center">
@@ -640,8 +650,59 @@
   </div>
 
   <div class="card" style="margin-top:0.25rem;">
+    <div class="section-label">My drinks</div>
+    <div id="custom-drinks-list"></div>
+    <button class="add-server-btn" onclick="openCustomDrink(null)" style="margin-top:0.75rem;">+ Add custom drink</button>
+  </div>
+
+  <div class="card" style="margin-top:0.25rem;">
     <div class="section-label">Danger zone</div>
     <button class="btn-danger" onclick="clearAllData()">Clear all saved data</button>
+  </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     SCREEN: Add / Edit Custom Drink
+════════════════════════════════════════ -->
+<div id="screen-custom-drink" class="screen">
+  <div class="blob-bg"><div class="blob-extra"></div></div>
+  <div class="screen-content">
+  <div class="topbar">
+    <div class="topbar-left">
+      <button class="icon-btn" onclick="show('screen-settings')" aria-label="Back">←</button>
+      <span class="app-title" id="custom-drink-title">Add drink</span>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="field">
+      <label for="cd-name">Drink name</label>
+      <input id="cd-name" type="text" placeholder="e.g. Founders KBS" autocomplete="off" autocorrect="off" />
+    </div>
+    <div class="field">
+      <label>Icon</label>
+      <div class="icon-row" id="cd-icon-row">
+        <div class="icon-opt selected" data-icon="🍺" onclick="selectIcon(this)">🍺</div>
+        <div class="icon-opt" data-icon="🥃" onclick="selectIcon(this)">🥃</div>
+        <div class="icon-opt" data-icon="🍷" onclick="selectIcon(this)">🍷</div>
+        <div class="icon-opt" data-icon="🥂" onclick="selectIcon(this)">🥂</div>
+        <div class="icon-opt" data-icon="🍹" onclick="selectIcon(this)">🍹</div>
+        <div class="icon-opt" data-icon="🍸" onclick="selectIcon(this)">🍸</div>
+        <div class="icon-opt" data-icon="🍎" onclick="selectIcon(this)">🍎</div>
+        <div class="icon-opt" data-icon="💧" onclick="selectIcon(this)">💧</div>
+        <div class="icon-opt" data-icon="☕" onclick="selectIcon(this)">☕</div>
+      </div>
+    </div>
+    <div class="field">
+      <label for="cd-abv">ABV</label>
+      <div class="abv-row">
+        <input id="cd-abv" type="number" min="0" max="100" step="0.1" placeholder="e.g. 6.5" />
+        <span class="abv-unit">% alcohol</span>
+      </div>
+      <div class="hint">Leave blank if unknown</div>
+    </div>
+    <button class="btn-primary" onclick="saveCustomDrink()">Save drink</button>
   </div>
   </div>
 </div>
@@ -679,6 +740,7 @@
   let sessionName = '', webhookUrl = '';
   let sessionStart = null, log = [], totalDrinks = 0, postCount = 0, qty = 1;
   let timerInterval = null;
+  let drinkSize = 'regular';
 
   // ── Boot ──
   window.addEventListener('load', () => {
@@ -728,6 +790,7 @@
     document.getElementById('s-name').value = name;
     renderHomeServerStatus();
     renderServerList();
+    renderCustomDrinksList();
   }
 
   function renderHomeServerStatus() {
@@ -883,6 +946,8 @@
     document.getElementById('log-list').innerHTML = '<div class="log-empty">No drinks logged yet</div>';
     document.getElementById('drink-type').value = '';
     document.getElementById('status-msg').textContent = '';
+    drinkSize = 'regular';
+    resetSizePills();
     document.getElementById('status-msg').className = 'status';
     updateStats();
     show('screen-tracker');
@@ -898,6 +963,87 @@
     if (mins < 1) el.textContent = 'Session just started';
     else if (mins < 60) el.textContent = `Running for ${mins} min${mins !== 1 ? 's' : ''}`;
     else { const h = Math.floor(mins/60), m = mins%60; el.textContent = `Running for ${h}h ${m}m`; }
+  }
+
+  // ── Beer icon detection ──
+  const BEER_ICONS = ['🍺', '🍎', '💧', '🍵', '🍋'];
+  function isBeerType(name) {
+    const all = getAllDrinks();
+    const match = all.find(d => d.name.toLowerCase() === name.toLowerCase());
+    if (match) return BEER_ICONS.includes(match.icon);
+    // Fallback: keyword check
+    const n = name.toLowerCase();
+    return n.includes('beer') || n.includes('lager') || n.includes('ale') ||
+           n.includes('stout') || n.includes('ipa') || n.includes('pilsner') ||
+           n.includes('cider') || n.includes('seltzer') || n.includes('white claw') ||
+           n.includes('truly') || n.includes('high noon') || n.includes('twisted tea') ||
+           n.includes('tall boy') || n.includes('tallboy') || n.includes('tub');
+  }
+
+  function updateSizePills() {
+    const name = document.getElementById('drink-type').value.trim();
+    const row = document.getElementById('size-row');
+    const beer = isBeerType(name);
+    const pills = row.querySelectorAll('.size-pill');
+    if (beer) {
+      pills[0].innerHTML = '<span class="pill-label">Regular</span><span class="pill-sub">12 oz</span>';
+      pills[0].dataset.size = 'regular';
+      pills[1].innerHTML = '<span class="pill-label">Tall Boy</span><span class="pill-sub">16 oz</span>';
+      pills[1].dataset.size = 'tallboy';
+      // Add tub pill if not already there
+      if (pills.length < 3) {
+        const tub = document.createElement('button');
+        tub.className = 'size-pill';
+        tub.dataset.size = 'tub';
+        tub.innerHTML = '<span class="pill-label">Tub</span><span class="pill-sub">24 oz</span>';
+        tub.onclick = function() { selectSize(this); };
+        row.appendChild(tub);
+      } else {
+        pills[2].innerHTML = '<span class="pill-label">Tub</span><span class="pill-sub">24 oz</span>';
+        pills[2].dataset.size = 'tub';
+        pills[2].style.display = '';
+      }
+    } else {
+      pills[0].innerHTML = '<span class="pill-label">Regular</span><span class="pill-sub">1× pour</span>';
+      pills[0].dataset.size = 'regular';
+      pills[1].innerHTML = '<span class="pill-label">Double</span><span class="pill-sub">2× spirit</span>';
+      pills[1].dataset.size = 'double';
+      if (pills.length >= 3) pills[2].style.display = 'none';
+    }
+    // If current size is tub but switched to spirit, reset to regular
+    const validSizes = beer ? ['regular','tallboy','tub'] : ['regular','double'];
+    if (!validSizes.includes(drinkSize)) {
+      drinkSize = 'regular';
+      resetSizePills();
+    }
+  }
+
+  function selectSize(el) {
+    document.querySelectorAll('#size-row .size-pill').forEach(p => p.classList.remove('active'));
+    el.classList.add('active');
+    drinkSize = el.dataset.size;
+  }
+
+  function resetSizePills() {
+    document.querySelectorAll('#size-row .size-pill').forEach(p => p.classList.remove('active'));
+    const first = document.querySelector('#size-row .size-pill');
+    if (first) first.classList.add('active');
+    drinkSize = 'regular';
+  }
+
+  // ── Size modifier labels and ABV multipliers ──
+  function getSizeLabel(size, isBeer) {
+    if (size === 'tallboy') return 'Tall Boy';
+    if (size === 'tub') return 'Tub';
+    if (size === 'double') return 'Double';
+    return null;
+  }
+
+  function getSizeAbvMultiplier(size) {
+    if (size === 'tallboy') return 1.33;  // 16oz vs 12oz
+    if (size === 'tub')     return 2.0;   // 24oz vs 12oz
+    if (size === 'double')  return 2.0;   // double pour
+    return 1.0;
   }
 
   function changeQty(delta) {
@@ -919,18 +1065,25 @@
     btn.disabled = true;
     totalDrinks += qty;
     const abv = getAbv(type);
-    const entry = { type, qty, abv, time: new Date() };
+    const sizeLabel = getSizeLabel(drinkSize, isBeerType(type));
+    const abvMultiplier = getSizeAbvMultiplier(drinkSize);
+    const effectiveAbv = abv !== null ? Math.round(abv * abvMultiplier * 10) / 10 : null;
+    const entry = { type, qty, abv: effectiveAbv, size: drinkSize, sizeLabel, time: new Date() };
     log.push(entry);
     updateStats();
     addLogItem(entry);
-    const drinkLabel = qty === 1 ? `1 ${type}` : `${qty}× ${type}`;
-    const abvTag = abv !== null ? ` *(${abv}% ABV)*` : '';
+    const sizePart = sizeLabel ? ` (${sizeLabel})` : '';
+    const drinkLabel = qty === 1 ? `1 ${type}${sizePart}` : `${qty}× ${type}${sizePart}`;
+    const abvTag = effectiveAbv !== null ? ` *(${effectiveAbv}% ABV)*` : '';
     const msg = `🍺 **${sessionName}** just had **${drinkLabel}**${abvTag}\n📊 Session total: **${totalDrinks} drink${totalDrinks !== 1 ? 's' : ''}** — ${buildSummary()}`;
     await postToDiscord(msg);
     document.getElementById('drink-type').value = '';
     qty = 1;
     document.getElementById('qty-num').textContent = '1';
     document.getElementById('qty-word').textContent = 'drink';
+    drinkSize = 'regular';
+    resetSizePills();
+    updateSizePills();
     btn.textContent = 'Log & post to Discord';
     btn.disabled = false;
   }
@@ -950,12 +1103,15 @@
     const counts = {};
     const abvMap = {};
     log.forEach(e => {
-      counts[e.type] = (counts[e.type] || 0) + e.qty;
-      if (e.abv !== null && e.abv !== undefined) abvMap[e.type] = e.abv;
+      const key = e.type + '||' + (e.size || 'regular');
+      counts[key] = (counts[key] || 0) + e.qty;
+      if (e.abv !== null && e.abv !== undefined) abvMap[key] = e.abv;
     });
-    return Object.entries(counts).map(([t, n]) => {
-      const abvStr = abvMap[t] !== undefined ? ` (${abvMap[t]}% ABV)` : '';
-      return `${n}× ${t}${abvStr}`;
+    return Object.entries(counts).map(([key, n]) => {
+      const [t, size] = key.split('||');
+      const abvStr = abvMap[key] !== undefined ? ` (${abvMap[key]}% ABV)` : '';
+      const sizeStr = size && size !== 'regular' ? ` ${size.charAt(0).toUpperCase() + size.slice(1)}` : '';
+      return `${n}× ${t}${sizeStr}${abvStr}`;
     }).join(', ');
   }
 
@@ -972,7 +1128,8 @@
     const timeStr = entry.time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     const item = document.createElement('div');
     item.className = 'log-item';
-    item.innerHTML = `<span class="log-drink">${entry.type}</span><span class="log-right"><span class="log-qty">+${entry.qty}</span><span class="log-time">${timeStr}</span></span>`;
+    const sizeBadge = entry.sizeLabel ? ` <span style="font-size:10px;background:rgba(224,120,32,0.12);color:var(--accent);border-radius:4px;padding:1px 5px;font-weight:700;">${entry.sizeLabel}</span>` : '';
+    item.innerHTML = `<span class="log-drink">${entry.type}${sizeBadge}</span><span class="log-right"><span class="log-qty">+${entry.qty}</span><span class="log-time">${timeStr}</span></span>`;
     list.insertBefore(item, list.firstChild);
   }
 
@@ -1506,16 +1663,110 @@
 
   let recentDrinks = JSON.parse(localStorage.getItem('dt-recent') || '[]');
 
+  // ── Custom drinks (user-defined) ──
+  function getCustomDrinks() {
+    try { return JSON.parse(localStorage.getItem('dt-custom-drinks') || '[]'); } catch { return []; }
+  }
+  function saveCustomDrinks(arr) { localStorage.setItem('dt-custom-drinks', JSON.stringify(arr)); }
+
+  function getAllDrinks() {
+    const custom = getCustomDrinks().map(d => ({ ...d, custom: true }));
+    return [...custom, ...DRINKS];
+  }
+
   function getAbv(drinkName) {
-    const match = DRINKS.find(d => d.name.toLowerCase() === drinkName.toLowerCase());
-    return match ? match.abv : null;
+    const all = getAllDrinks();
+    const match = all.find(d => d.name.toLowerCase() === drinkName.toLowerCase());
+    return match && match.abv != null ? match.abv : null;
+  }
+
+  function renderCustomDrinksList() {
+    const list = document.getElementById('custom-drinks-list');
+    if (!list) return;
+    const customs = getCustomDrinks();
+    if (customs.length === 0) {
+      list.innerHTML = '<p style="font-size:13px;color:var(--text-dim);padding:4px 0 2px;">No custom drinks yet. Add your favourites!</p>';
+      return;
+    }
+    list.innerHTML = customs.map(d => `
+      <div class="custom-drink-item">
+        <div class="custom-drink-icon">${d.icon}</div>
+        <div class="custom-drink-info">
+          <div class="custom-drink-name">${d.name}</div>
+          <div class="custom-drink-meta">${d.abv != null ? d.abv + '% ABV' : 'ABV unknown'}</div>
+        </div>
+        <div class="custom-drink-actions">
+          <button class="server-btn edit" onclick="openCustomDrink('${d.id}')" aria-label="Edit">✎</button>
+          <button class="server-btn del" onclick="deleteCustomDrink('${d.id}')" aria-label="Delete">✕</button>
+        </div>
+      </div>`).join('');
+  }
+
+  let editingCustomId = null;
+  function openCustomDrink(id) {
+    editingCustomId = id;
+    const titleEl = document.getElementById('custom-drink-title');
+    const nameEl = document.getElementById('cd-name');
+    const abvEl = document.getElementById('cd-abv');
+    // Reset icon selection
+    document.querySelectorAll('.icon-opt').forEach(el => el.classList.remove('selected'));
+    if (id) {
+      const drink = getCustomDrinks().find(d => d.id === id);
+      titleEl.textContent = 'Edit drink';
+      nameEl.value = drink ? drink.name : '';
+      abvEl.value = drink && drink.abv != null ? drink.abv : '';
+      const iconEl = document.querySelector(`.icon-opt[data-icon="${drink ? drink.icon : '🍺'}"]`);
+      if (iconEl) iconEl.classList.add('selected');
+      else document.querySelector('.icon-opt').classList.add('selected');
+    } else {
+      titleEl.textContent = 'Add drink';
+      nameEl.value = '';
+      abvEl.value = '';
+      document.querySelector('.icon-opt').classList.add('selected');
+    }
+    show('screen-custom-drink');
+  }
+
+  function selectIcon(el) {
+    document.querySelectorAll('.icon-opt').forEach(e => e.classList.remove('selected'));
+    el.classList.add('selected');
+  }
+
+  function saveCustomDrink() {
+    const name = document.getElementById('cd-name').value.trim();
+    if (!name) { alert('Please enter a drink name.'); return; }
+    const iconEl = document.querySelector('.icon-opt.selected');
+    const icon = iconEl ? iconEl.dataset.icon : '🍺';
+    const abvRaw = document.getElementById('cd-abv').value.trim();
+    const abv = abvRaw !== '' ? parseFloat(abvRaw) : null;
+    const customs = getCustomDrinks();
+    if (editingCustomId) {
+      const idx = customs.findIndex(d => d.id === editingCustomId);
+      if (idx !== -1) customs[idx] = { ...customs[idx], name, icon, abv };
+    } else {
+      customs.push({ id: 'cd-' + Date.now(), name, icon, abv });
+    }
+    saveCustomDrinks(customs);
+    renderCustomDrinksList();
+    show('screen-settings');
+  }
+
+  function deleteCustomDrink(id) {
+    if (!confirm('Remove this custom drink?')) return;
+    const customs = getCustomDrinks().filter(d => d.id !== id);
+    saveCustomDrinks(customs);
+    renderCustomDrinksList();
   }
 
   function getSuggestions(query) {
     const q = query.toLowerCase().trim();
     if (!q) return [];
-    const matches = DRINKS.filter(d => d.name.toLowerCase().includes(q));
+    const all = getAllDrinks();
+    const matches = all.filter(d => d.name.toLowerCase().includes(q));
     matches.sort((a, b) => {
+      const aCustom = a.custom ? -1 : 0;
+      const bCustom = b.custom ? -1 : 0;
+      if (aCustom !== bCustom) return aCustom - bCustom;
       const aStart = a.name.toLowerCase().startsWith(q);
       const bStart = b.name.toLowerCase().startsWith(q);
       if (aStart && !bStart) return -1;
@@ -1525,7 +1776,7 @@
     const recents = recentDrinks
       .filter(r => r.toLowerCase().includes(q) && !matches.find(m => m.name.toLowerCase() === r.toLowerCase()))
       .map(r => ({ name: r, icon: '🕐' }));
-    return [...recents, ...matches].slice(0, 5);
+    return [...recents, ...matches].slice(0, 6);
   }
 
   function highlightMatch(text, query) {
@@ -1569,7 +1820,7 @@
   document.addEventListener('DOMContentLoaded', () => {
     const input = document.getElementById('drink-type');
     if (input) {
-      input.addEventListener('input', () => renderSuggestions(input.value));
+      input.addEventListener('input', () => { renderSuggestions(input.value); updateSizePills(); });
       input.addEventListener('blur', () => setTimeout(closeSuggestions, 150));
     }
   });
