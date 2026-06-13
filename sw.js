@@ -1,4 +1,4 @@
-const CACHE = 'drink-tracker-v8';
+const CACHE = 'drink-tracker-v11';
 const ASSETS = [
   '/',
   '/index.html',

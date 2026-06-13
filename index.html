@@ -353,6 +353,16 @@
     .suggestion-item .sug-icon { font-size: 17px; flex-shrink: 0; }
     .suggestion-item .sug-match { color: var(--accent); font-weight: 700; }
     .suggestion-item .sug-abv { margin-left: auto; font-size: 12px; color: var(--text-dim); font-weight: 500; }
+    .sug-save-row {
+      padding: 11px 14px; min-height: 44px;
+      font-size: 14px; font-weight: 600; color: var(--accent);
+      cursor: pointer; border-top: 0.5px solid rgba(0,0,0,0.05);
+      display: flex; align-items: center; gap: 10px;
+      -webkit-tap-highlight-color: transparent;
+      background: rgba(224,120,32,0.04);
+    }
+    .sug-save-row:active { background: rgba(224,120,32,0.1); }
+    .sug-save-icon { font-size: 16px; flex-shrink: 0; }
 
     /* ── Quantity: 64pt height = well above 44pt minimum ── */
     .qty-row {
@@ -605,18 +615,23 @@
       </div>
       <button class="qty-btn plus" onclick="changeQty(1)" aria-label="Increase">+</button>
     </div>
-    <button class="btn-primary" id="log-btn" onclick="logDrink()">Log & post to Discord</button>
+    <button class="btn-primary" id="log-btn" onclick="logDrink()">Log & Post</button>
     <div class="status" id="status-msg"></div>
   </div>
 
   <div class="card">
-    <div class="section-label">This session</div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.625rem;">
+      <span class="section-label" style="margin-bottom:0;">This session</span>
+      <button class="relog-btn" onclick="focusDrinkInput()" style="font-size:13px;padding:5px 12px;">+ Add drink</button>
+    </div>
     <div class="log-list" id="log-list">
       <div class="log-empty">No drinks logged yet</div>
     </div>
     <div class="divider"></div>
     <button class="btn-ghost" onclick="endSession()">End session & post summary</button>
   </div>
+
+  <button class="fab" id="fab" onclick="focusDrinkInput()" aria-label="Add drink">+</button>
   </div>
 </div>
 
@@ -944,6 +959,7 @@
     document.getElementById('qty-num').textContent = '1';
     document.getElementById('qty-word').textContent = 'drink';
     document.getElementById('log-list').innerHTML = '<div class="log-empty">No drinks logged yet</div>';
+    const fab = document.getElementById('fab'); if (fab) fab.classList.remove('visible');
     document.getElementById('drink-type').value = '';
     document.getElementById('status-msg').textContent = '';
     drinkSize = 'regular';
@@ -1084,7 +1100,7 @@
     drinkSize = 'regular';
     resetSizePills();
     updateSizePills();
-    btn.textContent = 'Log & post to Discord';
+    btn.textContent = 'Log & Post';
     btn.disabled = false;
   }
 
@@ -1128,9 +1144,52 @@
     const timeStr = entry.time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     const item = document.createElement('div');
     item.className = 'log-item';
-    const sizeBadge = entry.sizeLabel ? ` <span style="font-size:10px;background:rgba(224,120,32,0.12);color:var(--accent);border-radius:4px;padding:1px 5px;font-weight:700;">${entry.sizeLabel}</span>` : '';
-    item.innerHTML = `<span class="log-drink">${entry.type}${sizeBadge}</span><span class="log-right"><span class="log-qty">+${entry.qty}</span><span class="log-time">${timeStr}</span></span>`;
+    const sizeBadge = entry.sizeLabel
+      ? ` <span style="font-size:10px;background:rgba(224,120,32,0.12);color:var(--accent);border-radius:4px;padding:1px 5px;font-weight:700;">${entry.sizeLabel}</span>`
+      : '';
+    const safeType = entry.type.replace(/'/g, "\'").replace(/"/g, '&quot;');
+    const safeSize = (entry.size || 'regular').replace(/'/g, "\'");
+    item.innerHTML = `
+      <div style="flex:1;min-width:0;">
+        <div class="log-drink">${entry.type}${sizeBadge}</div>
+        <div style="font-size:11px;color:var(--text-dim);margin-top:2px;">${timeStr}</div>
+      </div>
+      <div class="log-right" style="gap:8px;">
+        <span class="log-qty">+${entry.qty}</span>
+        <button class="relog-btn" onclick="relogDrink('${safeType}','${safeSize}')">+ Again</button>
+      </div>`;
     list.insertBefore(item, list.firstChild);
+    showFab();
+  }
+
+  function showFab() {
+    const fab = document.getElementById('fab');
+    if (fab) fab.classList.add('visible');
+  }
+
+  function focusDrinkInput() {
+    const input = document.getElementById('drink-type');
+    if (!input) return;
+    // Scroll to top of screen-content so the Log card is visible
+    const sc = document.querySelector('#screen-tracker .screen-content');
+    if (sc) sc.scrollTo({ top: 0, behavior: 'smooth' });
+    setTimeout(() => input.focus(), 320);
+  }
+
+  function relogDrink(type, size) {
+    // Pre-fill the drink input with this drink and set size
+    const input = document.getElementById('drink-type');
+    if (input) {
+      input.value = type;
+      updateSizePills();
+    }
+    // Set the correct size pill
+    drinkSize = size || 'regular';
+    document.querySelectorAll('#size-row .size-pill').forEach(p => {
+      p.classList.toggle('active', p.dataset.size === drinkSize);
+    });
+    // Scroll to top and focus
+    focusDrinkInput();
   }
 
   async function postToDiscord(message) {
@@ -1748,7 +1807,15 @@
     }
     saveCustomDrinks(customs);
     renderCustomDrinksList();
-    show('screen-settings');
+    // If we came from the tracker, go back there and pre-fill the drink name
+    if (quickSaveReturnScreen === 'screen-tracker') {
+      quickSaveReturnScreen = 'screen-settings';
+      const input = document.getElementById('drink-type');
+      if (input) { input.value = name; updateSizePills(); }
+      show('screen-tracker');
+    } else {
+      show('screen-settings');
+    }
   }
 
   function deleteCustomDrink(id) {
@@ -1788,14 +1855,28 @@
   function renderSuggestions(query) {
     const box = document.getElementById('suggestions');
     if (!box) return;
-    const results = getSuggestions(query);
-    if (!results.length) { box.innerHTML = ''; box.classList.remove('open'); return; }
-    box.innerHTML = results.map(d =>
-      `<div class="suggestion-item" onmousedown="pickSuggestion(event,'${d.name.replace(/'/g, "\'")}')">
+    const q = query.trim();
+    if (!q) { box.innerHTML = ''; box.classList.remove('open'); return; }
+    const results = getSuggestions(q);
+    const all = getAllDrinks();
+    const exactMatch = all.some(d => d.name.toLowerCase() === q.toLowerCase());
+    const rows = results.map(d => {
+      const abvBit = d.abv != null ? `<span class="sug-abv">${d.abv}%</span>` : '';
+      const safe = d.name.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+      return `<div class="suggestion-item" onmousedown="pickSuggestion(event,'${safe}')">
         <span class="sug-icon" aria-hidden="true">${d.icon}</span>
-        <span>${highlightMatch(d.name, query)}</span>
-      </div>`
-    ).join('');
+        <span style="flex:1;">${highlightMatch(d.name, q)}</span>${abvBit}
+      </div>`;
+    });
+    if (!exactMatch && q.length >= 2) {
+      const safeQ = q.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+      rows.push(`<div class="sug-save-row" onmousedown="quickSaveDrink(event,'${safeQ}')">
+        <span class="sug-save-icon">＋</span>
+        <span>Save "<strong>${q}</strong>" to my drinks</span>
+      </div>`);
+    }
+    if (!rows.length) { box.innerHTML = ''; box.classList.remove('open'); return; }
+    box.innerHTML = rows.join('');
     box.classList.add('open');
   }
 
@@ -1804,8 +1885,31 @@
     const input = document.getElementById('drink-type');
     input.value = name;
     closeSuggestions();
+    updateSizePills();
     input.focus();
   }
+
+  function quickSaveDrink(e, name) {
+    e.preventDefault();
+    closeSuggestions();
+    // Store where we came from so we can return after saving
+    quickSaveReturnScreen = 'screen-tracker';
+    // Pre-fill the custom drink form
+    editingCustomId = null;
+    const titleEl = document.getElementById('custom-drink-title');
+    const nameEl  = document.getElementById('cd-name');
+    const abvEl   = document.getElementById('cd-abv');
+    if (titleEl) titleEl.textContent = 'Save to my drinks';
+    if (nameEl)  nameEl.value = name;
+    if (abvEl)   abvEl.value = '';
+    // Reset icon selection to 🍺 default (user can change it)
+    document.querySelectorAll('.icon-opt').forEach(el => el.classList.remove('selected'));
+    const first = document.querySelector('.icon-opt');
+    if (first) first.classList.add('selected');
+    show('screen-custom-drink');
+  }
+
+  let quickSaveReturnScreen = 'screen-settings';
 
   function closeSuggestions() {
     const box = document.getElementById('suggestions');
