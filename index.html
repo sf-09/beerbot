@@ -22,8 +22,7 @@
 
     :root {
       --bg: #f5ede0;
-      --bg2: #faf6f0;
-      --surface: rgba(255,255,255,0.72);
+      --surface: rgba(255,255,255,0.75);
       --surface2: rgba(255,255,255,0.5);
       --border: rgba(0,0,0,0.07);
       --border-focus: rgba(224,130,40,0.5);
@@ -40,28 +39,40 @@
       --blob2: #f5c4a0;
       --blob3: #c8d8f0;
       --blob4: #d8c8f0;
+      /* Safe area insets */
+      --sat: env(safe-area-inset-top, 0px);
+      --sar: env(safe-area-inset-right, 0px);
+      --sab: env(safe-area-inset-bottom, 0px);
+      --sal: env(safe-area-inset-left, 0px);
     }
 
-    html, body {
+    html { height: 100%; }
+
+    body {
       height: 100%;
       background: var(--bg);
       color: var(--text);
       font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Rounded', 'Segoe UI', sans-serif;
       -webkit-font-smoothing: antialiased;
       overscroll-behavior: none;
-    }
-    body {
-      padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+      /* NO body padding — screens handle safe areas individually */
     }
 
-    .screen { display: none; flex-direction: column; min-height: 100dvh; padding-bottom: 2rem; }
+    /* ── Screens: full viewport, scroll within ── */
+    .screen {
+      display: none;
+      flex-direction: column;
+      height: 100%;
+      /* Each screen is exactly the viewport — content scrolls inside */
+      position: relative;
+      overflow: hidden;
+    }
     .screen.active { display: flex; }
 
-    /* ── Gradient blob background ── */
+    /* ── Blob background (fixed inside screen, non-scrolling) ── */
     .blob-bg {
       position: absolute;
-      top: 0; left: 0; right: 0;
-      height: 260px;
+      inset: 0;
       overflow: hidden;
       z-index: 0;
       pointer-events: none;
@@ -69,39 +80,56 @@
     .blob-bg::before {
       content: '';
       position: absolute;
-      width: 220px; height: 220px;
+      width: 260px; height: 260px;
       border-radius: 50%;
       background: var(--blob1);
-      top: -60px; left: -40px;
-      opacity: 0.9;
+      top: -80px; left: -60px;
+      opacity: 0.85;
     }
     .blob-bg::after {
       content: '';
       position: absolute;
-      width: 200px; height: 200px;
+      width: 220px; height: 220px;
       border-radius: 50%;
       background: var(--blob3);
-      top: 20px; right: -50px;
-      opacity: 0.7;
+      top: 30px; right: -60px;
+      opacity: 0.65;
     }
     .blob-extra {
       position: absolute;
-      width: 180px; height: 180px;
+      width: 200px; height: 200px;
       border-radius: 50%;
       background: var(--blob2);
-      top: 80px; left: 60px;
-      opacity: 0.6;
+      top: 100px; left: 50px;
+      opacity: 0.55;
       pointer-events: none;
-      z-index: 0;
     }
-    .screen-content { position: relative; z-index: 1; display: flex; flex-direction: column; flex: 1; }
+
+    /* ── Scrollable content layer sits above blobs ── */
+    .screen-content {
+      position: relative;
+      z-index: 1;
+      flex: 1;
+      overflow-y: auto;
+      overflow-x: hidden;
+      -webkit-overflow-scrolling: touch;
+      /* Top padding = status bar safe area */
+      padding-top: var(--sat);
+      /* Bottom padding = home indicator safe area */
+      padding-bottom: calc(var(--sab) + 1rem);
+      /* Side padding for notch/Dynamic Island */
+      padding-left: var(--sal);
+      padding-right: var(--sar);
+    }
 
     /* ── Top bar ── */
     .topbar {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 1.25rem 1.25rem 0.75rem;
+      padding: 0.75rem 1.25rem 0.5rem;
+      /* Apple HIG: 44pt minimum nav bar height */
+      min-height: 44px;
     }
     .topbar-left { display: flex; align-items: center; gap: 10px; }
     .app-icon {
@@ -111,35 +139,36 @@
       display: flex; align-items: center; justify-content: center;
       font-size: 18px;
       flex-shrink: 0;
-      box-shadow: 0 2px 8px rgba(224,120,32,0.3);
+      box-shadow: 0 2px 8px rgba(224,120,32,0.28);
     }
     .app-title { font-size: 17px; font-weight: 700; color: var(--text); }
 
+    /* Apple HIG: minimum tap target 44×44pt */
     .icon-btn {
-      width: 34px; height: 34px;
+      width: 44px; height: 44px;
       background: var(--surface);
       border: 0.5px solid var(--border);
-      border-radius: 10px;
+      border-radius: 12px;
       display: flex; align-items: center; justify-content: center;
       cursor: pointer;
       -webkit-tap-highlight-color: transparent;
       color: var(--text-muted);
-      font-size: 17px;
+      font-size: 18px;
       flex-shrink: 0;
       backdrop-filter: blur(8px);
       -webkit-backdrop-filter: blur(8px);
     }
-    .icon-btn:active { background: rgba(255,255,255,0.9); }
+    .icon-btn:active { background: rgba(255,255,255,0.95); }
 
     /* ── Cards ── */
     .card {
       background: var(--surface);
       border: 0.5px solid var(--border);
       border-radius: var(--radius);
-      padding: 1.25rem;
+      padding: 1.125rem;
       margin: 0 1rem 0.75rem;
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
     }
 
     .section-label {
@@ -148,17 +177,19 @@
       letter-spacing: 0.06em;
       text-transform: uppercase;
       color: var(--text-dim);
-      margin-bottom: 0.75rem;
+      margin-bottom: 0.625rem;
     }
 
     /* ── Fields ── */
-    .field { margin-bottom: 1rem; }
+    .field { margin-bottom: 0.875rem; }
     .field:last-child { margin-bottom: 0; }
-    .field label { display: block; font-size: 13px; color: var(--text-muted); margin-bottom: 6px; font-weight: 500; }
+    .field label { display: block; font-size: 13px; color: var(--text-muted); margin-bottom: 5px; font-weight: 500; }
     .field input {
       width: 100%;
-      padding: 12px 14px;
-      font-size: 15px;
+      /* Apple HIG: minimum 44pt touch height */
+      padding: 11px 14px;
+      min-height: 44px;
+      font-size: 16px; /* 16px prevents iOS auto-zoom on focus */
       background: rgba(255,255,255,0.6);
       border: 0.5px solid var(--border);
       border-radius: var(--radius-sm);
@@ -167,49 +198,51 @@
       -webkit-appearance: none;
       transition: border-color 0.15s;
     }
-    .field input:focus { border-color: var(--border-focus); background: rgba(255,255,255,0.9); }
+    .field input:focus { border-color: var(--border-focus); background: rgba(255,255,255,0.92); }
     .field input::placeholder { color: var(--text-dim); }
-    .field .hint { font-size: 11px; color: var(--text-dim); margin-top: 5px; line-height: 1.5; }
+    .field .hint { font-size: 12px; color: var(--text-dim); margin-top: 6px; line-height: 1.5; }
 
-    /* ── Buttons ── */
+    /* ── Buttons: min 44pt height per Apple HIG ── */
     .btn-primary {
       width: 100%;
-      padding: 14px;
+      min-height: 50px;
+      padding: 13px;
       background: linear-gradient(135deg, #f0a030, #e07020);
       color: #fff;
-      font-size: 15px;
+      font-size: 16px;
       font-weight: 700;
       border: none;
       border-radius: var(--radius-sm);
       cursor: pointer;
       -webkit-tap-highlight-color: transparent;
       transition: opacity 0.15s, transform 0.1s;
-      box-shadow: 0 4px 14px rgba(224,112,32,0.35);
+      box-shadow: 0 4px 14px rgba(224,112,32,0.32);
       letter-spacing: 0.01em;
     }
-    .btn-primary:active { opacity: 0.88; transform: scale(0.97); }
+    .btn-primary:active { opacity: 0.86; transform: scale(0.98); }
     .btn-primary:disabled { opacity: 0.5; pointer-events: none; }
 
     .btn-ghost {
       width: 100%;
-      padding: 12px;
+      min-height: 44px;
+      padding: 11px;
       background: transparent;
       color: var(--text-muted);
-      font-size: 13px;
+      font-size: 14px;
       border: 0.5px solid var(--border);
       border-radius: var(--radius-sm);
       cursor: pointer;
       -webkit-tap-highlight-color: transparent;
-      transition: background 0.1s;
     }
     .btn-ghost:active { background: rgba(0,0,0,0.04); }
 
     .btn-danger {
       width: 100%;
-      padding: 12px;
+      min-height: 44px;
+      padding: 11px;
       background: transparent;
       color: var(--red);
-      font-size: 13px;
+      font-size: 14px;
       border: 0.5px solid rgba(176,48,48,0.25);
       border-radius: var(--radius-sm);
       cursor: pointer;
@@ -218,38 +251,36 @@
     .btn-danger:active { background: rgba(176,48,48,0.05); }
 
     /* ── Home screen ── */
-    .home-hero { padding: 0.5rem 1.25rem 1.25rem; }
-    .home-greeting { font-size: 26px; font-weight: 800; color: var(--text); letter-spacing: -0.5px; }
-    .home-greeting span { color: var(--accent); }
-    .home-sub { font-size: 14px; color: var(--text-muted); margin-top: 4px; }
-    .home-actions { display: flex; flex-direction: column; gap: 10px; padding: 0 1rem 0.75rem; }
-
-    /* ── Hero blob on home ── */
     .home-blob {
-      margin: 0 1rem 1rem;
-      height: 110px;
+      margin: 0.25rem 1rem 0.75rem;
+      height: 100px;
       border-radius: var(--radius);
       background: linear-gradient(135deg, var(--blob1) 0%, var(--blob2) 40%, var(--blob3) 70%, var(--blob4) 100%);
       display: flex; align-items: center; justify-content: center;
       overflow: hidden;
-      position: relative;
     }
     .home-blob-inner {
-      width: 64px; height: 64px; border-radius: 50%;
+      width: 58px; height: 58px; border-radius: 50%;
       background: rgba(255,255,255,0.5);
       display: flex; align-items: center; justify-content: center;
-      font-size: 32px;
+      font-size: 28px;
       backdrop-filter: blur(4px);
       -webkit-backdrop-filter: blur(4px);
     }
+    .home-hero { padding: 0.25rem 1.25rem 0.75rem; }
+    .home-greeting { font-size: 24px; font-weight: 800; color: var(--text); letter-spacing: -0.5px; }
+    .home-greeting span { color: var(--accent); }
+    .home-sub { font-size: 14px; color: var(--text-muted); margin-top: 3px; }
+    .home-actions { padding: 0 1rem 0.75rem; }
 
     /* ── Session header ── */
     .session-header {
+      padding: 0.375rem 1.25rem 0.375rem;
+      min-height: 44px;
       display: flex; align-items: center; justify-content: space-between;
-      padding: 0.5rem 1.25rem 0.5rem;
     }
-    .session-name { font-size: 16px; font-weight: 700; color: var(--text); }
-    .session-timer { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+    .session-name { font-size: 15px; font-weight: 700; color: var(--text); }
+    .session-timer { font-size: 12px; color: var(--text-muted); margin-top: 1px; }
 
     /* ── Stats ── */
     .stats-grid {
@@ -262,52 +293,55 @@
       background: var(--surface);
       border: 0.5px solid var(--border);
       border-radius: var(--radius-sm);
-      padding: 10px 8px;
+      padding: 10px 6px;
       text-align: center;
       backdrop-filter: blur(8px);
       -webkit-backdrop-filter: blur(8px);
     }
-    .stat-val { font-size: 24px; font-weight: 800; color: var(--accent); letter-spacing: -0.5px; }
-    .stat-lbl { font-size: 10px; color: var(--text-dim); margin-top: 2px; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; }
+    .stat-val { font-size: 22px; font-weight: 800; color: var(--accent); letter-spacing: -0.5px; }
+    .stat-lbl { font-size: 10px; color: var(--text-dim); margin-top: 1px; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; }
 
-    /* ── Drink input ── */
+    /* ── Drink input: 16px prevents iOS zoom ── */
     .drink-input {
       width: 100%;
-      padding: 12px 14px;
-      font-size: 15px;
+      padding: 11px 14px;
+      min-height: 44px;
+      font-size: 16px;
       background: rgba(255,255,255,0.6);
       border: 0.5px solid var(--border);
       border-radius: var(--radius-sm);
       color: var(--text);
       outline: none;
       -webkit-appearance: none;
-      margin-bottom: 1rem;
+      margin-bottom: 0.75rem;
       transition: border-color 0.15s, background 0.15s;
     }
-    .drink-input:focus { border-color: var(--border-focus); background: rgba(255,255,255,0.9); }
+    .drink-input:focus { border-color: var(--border-focus); background: rgba(255,255,255,0.92); }
     .drink-input::placeholder { color: var(--text-dim); }
 
     /* ── Autocomplete ── */
-    .autocomplete-wrap { position: relative; margin-bottom: 1rem; }
+    .autocomplete-wrap { position: relative; margin-bottom: 0.75rem; }
     .autocomplete-wrap .drink-input { margin-bottom: 0; }
     .suggestions {
       position: absolute;
       top: calc(100% + 4px);
       left: 0; right: 0;
-      background: rgba(255,255,255,0.95);
+      background: rgba(255,255,255,0.97);
       border: 0.5px solid var(--border-focus);
       border-radius: var(--radius-sm);
       overflow: hidden;
-      z-index: 10;
+      z-index: 100;
       display: none;
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
       box-shadow: 0 8px 24px rgba(0,0,0,0.1);
     }
     .suggestions.open { display: block; }
     .suggestion-item {
-      padding: 11px 14px;
-      font-size: 14px;
+      /* Apple HIG: 44pt min touch target */
+      padding: 12px 14px;
+      min-height: 44px;
+      font-size: 15px;
       color: var(--text);
       cursor: pointer;
       border-bottom: 0.5px solid rgba(0,0,0,0.05);
@@ -315,23 +349,24 @@
       -webkit-tap-highlight-color: transparent;
     }
     .suggestion-item:last-child { border-bottom: none; }
-    .suggestion-item:active { background: rgba(224,120,32,0.06); }
-    .suggestion-item .sug-icon { font-size: 16px; flex-shrink: 0; }
+    .suggestion-item:active { background: rgba(224,120,32,0.07); }
+    .suggestion-item .sug-icon { font-size: 17px; flex-shrink: 0; }
     .suggestion-item .sug-match { color: var(--accent); font-weight: 700; }
-    .suggestion-item .sug-abv { margin-left: auto; font-size: 11px; color: var(--text-dim); font-weight: 500; }
+    .suggestion-item .sug-abv { margin-left: auto; font-size: 12px; color: var(--text-dim); font-weight: 500; }
 
-    /* ── Quantity ── */
+    /* ── Quantity: 64pt height = well above 44pt minimum ── */
     .qty-row {
       display: flex;
-      align-items: center;
-      margin-bottom: 1rem;
+      align-items: stretch;
+      margin-bottom: 0.75rem;
       background: rgba(255,255,255,0.5);
       border: 0.5px solid var(--border);
       border-radius: var(--radius-sm);
       overflow: hidden;
+      min-height: 64px;
     }
     .qty-btn {
-      width: 72px; height: 64px;
+      width: 72px;
       border: none;
       font-size: 32px;
       font-weight: 300;
@@ -339,30 +374,31 @@
       -webkit-tap-highlight-color: transparent;
       display: flex; align-items: center; justify-content: center;
       flex-shrink: 0;
-      transition: filter 0.1s, transform 0.1s;
+      transition: filter 0.1s;
       color: #fff;
     }
-    .qty-btn:active { filter: brightness(0.85); transform: scale(0.94); }
+    .qty-btn:active { filter: brightness(0.82); }
     .qty-btn.minus { background: #c03838; }
     .qty-btn.plus  { background: #3a8a28; }
-    .qty-center { flex: 1; text-align: center; padding: 8px 0; background: rgba(255,255,255,0.4); }
-    .qty-num { font-size: 28px; font-weight: 800; color: var(--text); display: block; line-height: 1; letter-spacing: -0.5px; }
-    .qty-word { font-size: 10px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600; }
+    .qty-center { flex: 1; text-align: center; background: rgba(255,255,255,0.4); display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 8px 0; }
+    .qty-num { font-size: 28px; font-weight: 800; color: var(--text); line-height: 1; letter-spacing: -0.5px; }
+    .qty-word { font-size: 10px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600; margin-top: 2px; }
 
     /* ── Status ── */
-    .status { font-size: 12px; text-align: center; min-height: 18px; margin-top: 0.5rem; color: var(--text-dim); }
+    .status { font-size: 13px; text-align: center; min-height: 20px; margin-top: 0.5rem; color: var(--text-dim); }
     .status.ok { color: var(--green); font-weight: 600; }
     .status.err { color: var(--red); }
 
-    /* ── Log list ── */
-    .log-list { display: flex; flex-direction: column; gap: 6px; max-height: 220px; overflow-y: auto; }
+    /* ── Log list: flexible height, scrolls naturally with page ── */
+    .log-list { display: flex; flex-direction: column; gap: 6px; }
     .log-empty { font-size: 13px; color: var(--text-dim); text-align: center; padding: 1rem 0; }
     .log-item {
       display: flex; align-items: center; justify-content: space-between;
       background: rgba(255,255,255,0.5);
       border: 0.5px solid var(--border);
       border-radius: var(--radius-sm);
-      padding: 9px 12px;
+      padding: 10px 12px;
+      min-height: 44px;
     }
     .log-drink { font-size: 14px; font-weight: 600; color: var(--text); }
     .log-right { display: flex; align-items: center; gap: 8px; }
@@ -372,28 +408,87 @@
     /* ── Settings rows ── */
     .settings-row {
       display: flex; align-items: center; justify-content: space-between;
-      padding: 11px 0;
+      padding: 12px 0;
+      min-height: 44px;
       border-bottom: 0.5px solid var(--border);
     }
     .settings-row:last-child { border-bottom: none; padding-bottom: 0; }
     .settings-row:first-child { padding-top: 0; }
-    .settings-row-label { font-size: 14px; color: var(--text); font-weight: 500; }
+    .settings-row-label { font-size: 15px; color: var(--text); font-weight: 500; }
     .settings-row-val { font-size: 13px; color: var(--text-muted); max-width: 55%; text-align: right; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
     .saved-badge {
-      display: inline-block; font-size: 11px; color: var(--green);
-      background: rgba(58,125,42,0.1); border-radius: 5px;
-      padding: 2px 8px; margin-top: 6px; opacity: 0; transition: opacity 0.3s;
+      display: inline-block; font-size: 12px; color: var(--green);
+      background: rgba(58,125,42,0.1); border-radius: 6px;
+      padding: 3px 10px; margin-top: 8px; opacity: 0; transition: opacity 0.3s;
     }
     .saved-badge.show { opacity: 1; }
 
-    .divider { border: none; border-top: 0.5px solid var(--border); margin: 1rem 0; }
+    .divider { border: none; border-top: 0.5px solid var(--border); margin: 0.875rem 0; }
 
-    .pop { animation: pop 0.2s ease; }
-    @keyframes pop { 0%{transform:scale(1)} 50%{transform:scale(1.2)} 100%{transform:scale(1)} }
+    /* ── Discord server list ── */
+    .server-item {
+      display: flex; align-items: center; gap: 12px;
+      padding: 12px 0; min-height: 60px;
+      border-bottom: 0.5px solid var(--border);
+    }
+    .server-item:last-child { border-bottom: none; padding-bottom: 0; }
+    .server-item:first-child { padding-top: 0; }
+    .server-avatar {
+      width: 40px; height: 40px; border-radius: 10px;
+      background: linear-gradient(135deg, #f0a030, #e07020);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px; flex-shrink: 0;
+    }
+    .server-avatar.inactive { background: rgba(0,0,0,0.08); }
+    .server-info { flex: 1; min-width: 0; }
+    .server-name { font-size: 15px; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .server-url  { font-size: 11px; color: var(--text-dim); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .server-actions { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+    .server-active-badge {
+      font-size: 10px; font-weight: 700; color: var(--green);
+      background: rgba(58,125,42,0.12); border-radius: 20px;
+      padding: 3px 8px; white-space: nowrap;
+    }
+    .server-btn {
+      width: 32px; height: 32px; border-radius: 8px; border: none;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; -webkit-tap-highlight-color: transparent;
+      font-size: 15px; transition: background 0.1s;
+    }
+    .server-btn.select { background: rgba(224,120,32,0.1); color: var(--accent); }
+    .server-btn.select:active { background: rgba(224,120,32,0.2); }
+    .server-btn.edit   { background: rgba(0,0,0,0.05); color: var(--text-muted); }
+    .server-btn.edit:active { background: rgba(0,0,0,0.1); }
+    .server-btn.del    { background: rgba(176,48,48,0.07); color: var(--red); }
+    .server-btn.del:active { background: rgba(176,48,48,0.14); }
+    .add-server-btn {
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      width: 100%; padding: 12px; min-height: 44px;
+      background: rgba(224,120,32,0.08);
+      border: 0.5px dashed rgba(224,120,32,0.4);
+      border-radius: var(--radius-sm);
+      color: var(--accent); font-size: 14px; font-weight: 600;
+      cursor: pointer; -webkit-tap-highlight-color: transparent;
+      margin-top: 0.75rem;
+    }
+    .add-server-btn:active { background: rgba(224,120,32,0.14); }
+    .home-active-server {
+      display: flex; align-items: center; gap: 10px;
+      background: rgba(58,125,42,0.08);
+      border: 0.5px solid rgba(58,125,42,0.2);
+      border-radius: var(--radius-sm);
+      padding: 10px 12px; margin-top: 0.75rem;
+    }
+    .has-icon { font-size: 18px; }
+    .has-label { font-size: 11px; color: var(--green); font-weight: 600; }
+    .has-name  { font-size: 14px; font-weight: 600; color: var(--text); }
+
+    .pop { animation: pop 0.18s ease; }
+    @keyframes pop { 0%{transform:scale(1)} 50%{transform:scale(1.18)} 100%{transform:scale(1)} }
   </style>
 </head>
-<body>
+<body style="overflow:hidden; position:fixed; width:100%; height:100%;">
 
 <!-- ══════════════════════════════════════
      SCREEN: First-time Setup
@@ -449,15 +544,8 @@
   </div>
 
   <div class="card" style="margin-top: 0.25rem;">
-    <div class="section-label">Discord</div>
-    <div class="settings-row">
-      <span class="settings-row-label">Channel</span>
-      <span class="settings-row-val" id="home-webhook-preview">—</span>
-    </div>
-    <div class="settings-row">
-      <span class="settings-row-label">Status</span>
-      <span class="settings-row-val" id="home-webhook-status" style="color: var(--green);">Connected</span>
-    </div>
+    <div class="section-label">Active Discord server</div>
+    <div id="home-server-status"></div>
   </div>
   </div>
 </div>
@@ -541,25 +629,47 @@
       <label for="s-name">Name</label>
       <input id="s-name" type="text" placeholder="Your name" autocomplete="off" autocorrect="off" />
     </div>
-  </div>
-
-  <div class="card">
-    <div class="section-label">Discord</div>
-    <div class="field">
-      <label for="s-webhook">Webhook URL</label>
-      <input id="s-webhook" type="url" placeholder="https://discord.com/api/webhooks/..." autocomplete="off" autocorrect="off" autocapitalize="none" />
-      <div class="hint">In Discord: channel settings → Integrations → Webhooks → New Webhook → Copy URL</div>
-    </div>
-  </div>
-
-  <div style="padding: 0 1rem;">
-    <button class="btn-primary" onclick="saveSettings()">Save changes</button>
+    <button class="btn-primary" onclick="saveName()" style="margin-top:0.75rem;">Save name</button>
     <span class="saved-badge" id="saved-badge">Saved ✓</span>
   </div>
 
-  <div class="card" style="margin-top: 1rem;">
+  <div class="card">
+    <div class="section-label">Discord servers</div>
+    <div id="server-list"></div>
+    <button class="add-server-btn" onclick="openAddServer(null)">+ Add Discord server</button>
+  </div>
+
+  <div class="card" style="margin-top:0.25rem;">
     <div class="section-label">Danger zone</div>
     <button class="btn-danger" onclick="clearAllData()">Clear all saved data</button>
+  </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     SCREEN: Add / Edit Server
+════════════════════════════════════════ -->
+<div id="screen-add-server" class="screen">
+  <div class="blob-bg"><div class="blob-extra"></div></div>
+  <div class="screen-content">
+  <div class="topbar">
+    <div class="topbar-left">
+      <button class="icon-btn" onclick="show('screen-settings')" aria-label="Back">←</button>
+      <span class="app-title" id="add-server-title">Add server</span>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="field">
+      <label for="srv-nickname">Server nickname</label>
+      <input id="srv-nickname" type="text" placeholder="e.g. Friday Night Crew" autocomplete="off" autocorrect="off" />
+    </div>
+    <div class="field">
+      <label for="srv-webhook">Webhook URL</label>
+      <input id="srv-webhook" type="url" placeholder="https://discord.com/api/webhooks/..." autocomplete="off" autocorrect="off" autocapitalize="none" />
+      <div class="hint">In Discord: channel settings → Integrations → Webhooks → New Webhook → Copy URL</div>
+    </div>
+    <button class="btn-primary" onclick="saveServer()">Save server</button>
   </div>
   </div>
 </div>
@@ -574,7 +684,7 @@
   window.addEventListener('load', () => {
     if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
     const saved = loadSettings();
-    if (saved.name && saved.webhook) {
+    if (saved.name && getServers().length > 0) {
       applySettings(saved.name, saved.webhook);
       show('screen-home');
     } else {
@@ -582,21 +692,87 @@
     }
   });
 
+  // ── Storage helpers ──
+  function getServers() {
+    try { return JSON.parse(localStorage.getItem('dt-servers') || '[]'); } catch { return []; }
+  }
+  function saveServers(arr) { localStorage.setItem('dt-servers', JSON.stringify(arr)); }
+  function getActiveId() { return localStorage.getItem('dt-active-server') || ''; }
+  function setActiveId(id) { localStorage.setItem('dt-active-server', id); }
+
+  function getActiveServer() {
+    const servers = getServers();
+    const id = getActiveId();
+    return servers.find(s => s.id === id) || servers[0] || null;
+  }
+
+  // ── Boot ──
   function loadSettings() {
-    return {
-      name: localStorage.getItem('dt-name') || '',
-      webhook: localStorage.getItem('dt-webhook') || ''
-    };
+    const name = localStorage.getItem('dt-name') || '';
+    // Migrate old single webhook to new multi-server format
+    const oldWebhook = localStorage.getItem('dt-webhook');
+    if (oldWebhook && getServers().length === 0) {
+      const migrated = [{ id: 'srv-' + Date.now(), name: 'My Server', url: oldWebhook }];
+      saveServers(migrated);
+      setActiveId(migrated[0].id);
+      localStorage.removeItem('dt-webhook');
+    }
+    const active = getActiveServer();
+    return { name, webhook: active ? active.url : '' };
   }
 
   function applySettings(name, webhook) {
     sessionName = name;
     webhookUrl = webhook;
     document.getElementById('home-greeting').innerHTML = `Hey, <span>${name}!</span>`;
-    const preview = webhook ? '…' + webhook.slice(-20) : '—';
-    document.getElementById('home-webhook-preview').textContent = preview;
     document.getElementById('s-name').value = name;
-    document.getElementById('s-webhook').value = webhook;
+    renderHomeServerStatus();
+    renderServerList();
+  }
+
+  function renderHomeServerStatus() {
+    const active = getActiveServer();
+    const el = document.getElementById('home-server-status');
+    if (!el) return;
+    if (!active) {
+      el.innerHTML = '<p style="font-size:13px;color:var(--text-dim);padding:4px 0;">No server configured. Go to Settings to add one.</p>';
+      return;
+    }
+    el.innerHTML = `<div class="home-active-server">
+      <span class="has-icon">📡</span>
+      <div>
+        <div class="has-label">Active</div>
+        <div class="has-name">${active.name}</div>
+      </div>
+    </div>`;
+  }
+
+  function renderServerList() {
+    const list = document.getElementById('server-list');
+    if (!list) return;
+    const servers = getServers();
+    const activeId = getActiveId();
+    if (servers.length === 0) {
+      list.innerHTML = '<p style="font-size:13px;color:var(--text-dim);padding:4px 0 8px;">No servers added yet.</p>';
+      return;
+    }
+    list.innerHTML = servers.map(s => {
+      const isActive = s.id === activeId;
+      return `<div class="server-item">
+        <div class="server-avatar${isActive ? '' : ' inactive'}">${isActive ? '📡' : '💬'}</div>
+        <div class="server-info">
+          <div class="server-name">${s.name}</div>
+          <div class="server-url">…${s.url.slice(-28)}</div>
+        </div>
+        <div class="server-actions">
+          ${isActive
+            ? '<span class="server-active-badge">Active</span>'
+            : `<button class="server-btn select" onclick="activateServer('${s.id}')" aria-label="Set active">✓</button>`}
+          <button class="server-btn edit" onclick="openAddServer('${s.id}')" aria-label="Edit">✎</button>
+          <button class="server-btn del" onclick="deleteServer('${s.id}')" aria-label="Delete">✕</button>
+        </div>
+      </div>`;
+    }).join('');
   }
 
   // ── First run ──
@@ -608,29 +784,91 @@
       alert('Please paste a valid Discord webhook URL.'); return;
     }
     localStorage.setItem('dt-name', name);
-    localStorage.setItem('dt-webhook', webhook);
+    const server = { id: 'srv-' + Date.now(), name: 'My Server', url: webhook };
+    saveServers([server]);
+    setActiveId(server.id);
     applySettings(name, webhook);
     show('screen-home');
   }
 
   // ── Settings ──
-  function saveSettings() {
+  function saveName() {
     const name = document.getElementById('s-name').value.trim();
-    const webhook = document.getElementById('s-webhook').value.trim();
     if (!name) { alert('Please enter your name.'); return; }
-    if (!webhook.startsWith('https://discord.com/api/webhooks/')) {
-      alert('Please paste a valid Discord webhook URL.'); return;
-    }
     localStorage.setItem('dt-name', name);
-    localStorage.setItem('dt-webhook', webhook);
-    applySettings(name, webhook);
+    sessionName = name;
+    document.getElementById('home-greeting').innerHTML = `Hey, <span>${name}!</span>`;
     const badge = document.getElementById('saved-badge');
     badge.classList.add('show');
     setTimeout(() => badge.classList.remove('show'), 2500);
   }
 
+  // ── Add / Edit server ──
+  let editingServerId = null;
+  function openAddServer(id) {
+    editingServerId = id;
+    const title = document.getElementById('add-server-title');
+    const nicknameEl = document.getElementById('srv-nickname');
+    const webhookEl = document.getElementById('srv-webhook');
+    if (id) {
+      const srv = getServers().find(s => s.id === id);
+      title.textContent = 'Edit server';
+      nicknameEl.value = srv ? srv.name : '';
+      webhookEl.value = srv ? srv.url : '';
+    } else {
+      title.textContent = 'Add server';
+      nicknameEl.value = '';
+      webhookEl.value = '';
+    }
+    show('screen-add-server');
+  }
+
+  function saveServer() {
+    const name = document.getElementById('srv-nickname').value.trim();
+    const url = document.getElementById('srv-webhook').value.trim();
+    if (!name) { alert('Please enter a nickname for this server.'); return; }
+    if (!url.startsWith('https://discord.com/api/webhooks/')) {
+      alert('Please paste a valid Discord webhook URL.'); return;
+    }
+    const servers = getServers();
+    if (editingServerId) {
+      const idx = servers.findIndex(s => s.id === editingServerId);
+      if (idx !== -1) servers[idx] = { ...servers[idx], name, url };
+    } else {
+      const newSrv = { id: 'srv-' + Date.now(), name, url };
+      servers.push(newSrv);
+      if (servers.length === 1) setActiveId(newSrv.id);
+    }
+    saveServers(servers);
+    const active = getActiveServer();
+    webhookUrl = active ? active.url : '';
+    renderServerList();
+    renderHomeServerStatus();
+    show('screen-settings');
+  }
+
+  function activateServer(id) {
+    setActiveId(id);
+    const srv = getServers().find(s => s.id === id);
+    webhookUrl = srv ? srv.url : '';
+    renderServerList();
+    renderHomeServerStatus();
+  }
+
+  function deleteServer(id) {
+    if (!confirm('Remove this Discord server?')) return;
+    let servers = getServers().filter(s => s.id !== id);
+    saveServers(servers);
+    if (getActiveId() === id) {
+      setActiveId(servers[0] ? servers[0].id : '');
+      webhookUrl = servers[0] ? servers[0].url : '';
+    }
+    renderServerList();
+    renderHomeServerStatus();
+  }
+
   function clearAllData() {
-    if (!confirm('This will erase your name and webhook URL. Continue?')) return;
+    if (!confirm('This will erase all saved data including servers. Continue?')) return;
     localStorage.clear();
     location.reload();
   }
@@ -761,133 +999,509 @@
 
   // ── Drink suggestions ──
   const DRINKS = [
-    // ── Beers: generic styles ──
-    { name: 'Beer', icon: '🍺', abv: 5.0 }, { name: 'Lager', icon: '🍺', abv: 4.5 }, { name: 'IPA', icon: '🍺', abv: 6.5 },
-    { name: 'Pale Ale', icon: '🍺', abv: 5.0 }, { name: 'Stout', icon: '🍺', abv: 5.5 }, { name: 'Porter', icon: '🍺', abv: 5.5 },
-    { name: 'Sour Beer', icon: '🍺', abv: 4.5 }, { name: 'Wheat Beer', icon: '🍺', abv: 5.0 }, { name: 'Pilsner', icon: '🍺', abv: 4.8 },
-    { name: 'Session IPA', icon: '🍺', abv: 4.5 }, { name: 'Double IPA', icon: '🍺', abv: 8.5 }, { name: 'Hazy IPA', icon: '🍺', abv: 6.5 },
-    { name: 'Amber Ale', icon: '🍺', abv: 5.2 }, { name: 'Brown Ale', icon: '🍺', abv: 5.0 }, { name: 'Hefeweizen', icon: '🍺', abv: 5.0 },
-    // ── Beers: brands ──
-    { name: 'Budweiser', icon: '🍺', abv: 5.0 }, { name: 'Bud Light', icon: '🍺', abv: 4.2 }, { name: 'Bud Light Lime', icon: '🍺', abv: 4.2 },
-    { name: 'Coors Light', icon: '🍺', abv: 4.2 }, { name: 'Coors Banquet', icon: '🍺', abv: 5.0 },
-    { name: 'Miller Lite', icon: '🍺', abv: 4.2 }, { name: 'Miller High Life', icon: '🍺', abv: 4.6 },
-    { name: 'Michelob Ultra', icon: '🍺', abv: 4.2 }, { name: 'Natural Light', icon: '🍺', abv: 4.2 },
-    { name: 'Corona', icon: '🍺', abv: 4.6 }, { name: 'Corona Light', icon: '🍺', abv: 4.1 }, { name: 'Corona Extra', icon: '🍺', abv: 4.6 },
-    { name: 'Modelo', icon: '🍺', abv: 4.4 }, { name: 'Modelo Especial', icon: '🍺', abv: 4.4 }, { name: 'Modelo Negra', icon: '🍺', abv: 5.4 },
-    { name: 'Heineken', icon: '🍺', abv: 5.0 }, { name: 'Heineken 0.0', icon: '🍺', abv: 0.0 },
-    { name: 'Stella Artois', icon: '🍺', abv: 5.0 }, { name: 'Guinness', icon: '🍺', abv: 4.2 },
-    { name: 'Blue Moon', icon: '🍺', abv: 5.4 }, { name: 'Blue Moon Light Sky', icon: '🍺', abv: 4.0 },
-    { name: 'Shock Top', icon: '🍺', abv: 5.2 }, { name: 'Sam Adams', icon: '🍺', abv: 5.0 },
-    { name: 'Sam Adams Boston Lager', icon: '🍺', abv: 5.0 }, { name: 'Sam Adams Seasonal', icon: '🍺', abv: 5.3 },
-    { name: 'Dogfish Head 60 Minute', icon: '🍺', abv: 6.0 }, { name: 'Dogfish Head 90 Minute', icon: '🍺', abv: 9.0 },
-    { name: 'Sierra Nevada Pale Ale', icon: '🍺', abv: 5.6 }, { name: 'Sierra Nevada Torpedo', icon: '🍺', abv: 7.2 },
-    { name: 'New Belgium Fat Tire', icon: '🍺', abv: 5.2 }, { name: 'Lagunitas IPA', icon: '🍺', abv: 6.2 },
-    { name: 'Stone IPA', icon: '🍺', abv: 6.9 }, { name: 'Goose Island IPA', icon: '🍺', abv: 5.9 },
-    { name: 'Founders All Day IPA', icon: '🍺', abv: 4.7 }, { name: "Bell's Two Hearted", icon: '🍺', abv: 7.0 },
-    { name: 'Allagash White', icon: '🍺', abv: 5.1 }, { name: 'Sweetwater 420', icon: '🍺', abv: 5.7 },
-    { name: 'Yuengling', icon: '🍺', abv: 4.4 }, { name: 'Pabst Blue Ribbon', icon: '🍺', abv: 4.7 },
-    { name: 'Rolling Rock', icon: '🍺', abv: 4.5 }, { name: 'Keystone Light', icon: '🍺', abv: 4.1 },
-    { name: 'Dos Equis', icon: '🍺', abv: 4.2 }, { name: 'Tecate', icon: '🍺', abv: 4.5 }, { name: 'Pacifico', icon: '🍺', abv: 4.4 },
-    { name: 'Presidente', icon: '🍺', abv: 5.0 }, { name: 'Peroni', icon: '🍺', abv: 5.1 }, { name: 'Moretti', icon: '🍺', abv: 4.6 },
-    { name: 'Amstel Light', icon: '🍺', abv: 3.5 }, { name: "Beck's", icon: '🍺', abv: 5.0 }, { name: 'Fosters', icon: '🍺', abv: 5.0 },
-    { name: 'Kingfisher', icon: '🍺', abv: 4.8 }, { name: 'Sapporo', icon: '🍺', abv: 4.9 }, { name: 'Asahi', icon: '🍺', abv: 5.0 },
-    { name: 'Kirin', icon: '🍺', abv: 5.0 }, { name: 'Tiger Beer', icon: '🍺', abv: 5.0 }, { name: 'Tsingtao', icon: '🍺', abv: 4.7 },
-    { name: 'Carlsberg', icon: '🍺', abv: 5.0 }, { name: "Tennent's", icon: '🍺', abv: 4.0 },
-    // ── Ciders ──
-    { name: 'Cider', icon: '🍎', abv: 5.0 }, { name: 'Hard Cider', icon: '🍎', abv: 5.0 },
-    { name: 'Angry Orchard', icon: '🍎', abv: 5.0 }, { name: 'Angry Orchard Crisp Apple', icon: '🍎', abv: 5.0 },
-    { name: 'Strongbow', icon: '🍎', abv: 5.0 }, { name: 'Magners', icon: '🍎', abv: 4.5 },
-    { name: 'Woodchuck Cider', icon: '🍎', abv: 5.0 }, { name: 'Ace Cider', icon: '🍎', abv: 5.0 },
-    // ── Hard Seltzers ──
-    { name: 'Hard Seltzer', icon: '💧', abv: 5.0 },
-    { name: 'White Claw', icon: '💧', abv: 5.0 }, { name: 'White Claw Black Cherry', icon: '💧', abv: 5.0 },
-    { name: 'White Claw Mango', icon: '💧', abv: 5.0 }, { name: 'White Claw Lime', icon: '💧', abv: 5.0 },
-    { name: 'White Claw Raspberry', icon: '💧', abv: 5.0 },
-    { name: 'Truly Hard Seltzer', icon: '💧', abv: 5.0 }, { name: 'Truly Wild Berry', icon: '💧', abv: 5.0 },
-    { name: 'Truly Lemonade', icon: '💧', abv: 5.0 },
-    { name: 'Bud Light Seltzer', icon: '💧', abv: 5.0 }, { name: 'Corona Hard Seltzer', icon: '💧', abv: 4.5 },
-    { name: 'High Noon', icon: '💧', abv: 4.5 }, { name: 'High Noon Peach', icon: '💧', abv: 4.5 },
-    { name: 'Vizzy Hard Seltzer', icon: '💧', abv: 5.0 }, { name: 'Bon & Viv Spiked Seltzer', icon: '💧', abv: 4.5 },
-    // ── Wine: generic ──
-    { name: 'Wine', icon: '🍷', abv: 13.0 }, { name: 'Red Wine', icon: '🍷', abv: 13.5 }, { name: 'White Wine', icon: '🍷', abv: 12.5 },
-    { name: 'Rosé', icon: '🍷', abv: 12.0 }, { name: 'Sangria', icon: '🍷', abv: 10.0 },
-    { name: 'Cabernet Sauvignon', icon: '🍷', abv: 13.5 }, { name: 'Merlot', icon: '🍷', abv: 13.5 },
-    { name: 'Pinot Noir', icon: '🍷', abv: 13.0 }, { name: 'Shiraz', icon: '🍷', abv: 14.5 }, { name: 'Malbec', icon: '🍷', abv: 14.0 },
-    { name: 'Chardonnay', icon: '🍷', abv: 13.5 }, { name: 'Sauvignon Blanc', icon: '🍷', abv: 12.5 },
-    { name: 'Pinot Grigio', icon: '🍷', abv: 12.0 }, { name: 'Riesling', icon: '🍷', abv: 10.0 },
-    { name: 'Moscato', icon: '🍷', abv: 7.5 }, { name: 'Zinfandel', icon: '🍷', abv: 14.5 },
-    // ── Wine: brands ──
-    { name: 'Kim Crawford', icon: '🍷', abv: 12.5 }, { name: 'Meiomi Pinot Noir', icon: '🍷', abv: 13.5 },
-    { name: 'Whispering Angel Rosé', icon: '🍷', abv: 13.0 }, { name: 'Josh Cellars', icon: '🍷', abv: 13.5 },
-    { name: 'Apothic Red', icon: '🍷', abv: 13.5 }, { name: 'Barefoot Wine', icon: '🍷', abv: 13.0 },
-    { name: 'La Marca Prosecco', icon: '🥂', abv: 11.0 }, { name: 'Veuve Clicquot', icon: '🥂', abv: 12.0 },
-    // ── Bubbly ──
-    { name: 'Prosecco', icon: '🥂', abv: 11.0 }, { name: 'Champagne', icon: '🥂', abv: 12.0 },
-    { name: 'Mimosa', icon: '🥂', abv: 6.0 }, { name: 'Bellini', icon: '🥂', abv: 5.5 }, { name: 'Aperol Spritz', icon: '🥂', abv: 8.0 },
-    // ── Spirits: vodka ──
-    { name: 'Vodka Soda', icon: '🥃', abv: 13.0 }, { name: 'Vodka Cranberry', icon: '🥃', abv: 13.0 },
-    { name: 'Vodka Tonic', icon: '🥃', abv: 13.0 }, { name: 'Vodka Red Bull', icon: '🥃', abv: 10.0 },
-    { name: 'Vodka Shot', icon: '🥃', abv: 40.0 },
-    { name: 'Grey Goose', icon: '🥃', abv: 40.0 }, { name: "Tito's", icon: '🥃', abv: 40.0 },
-    { name: 'Absolut', icon: '🥃', abv: 40.0 }, { name: 'Ketel One', icon: '🥃', abv: 40.0 },
-    { name: 'Belvedere', icon: '🥃', abv: 40.0 }, { name: 'Smirnoff', icon: '🥃', abv: 40.0 },
-    { name: 'Stolichnaya', icon: '🥃', abv: 40.0 }, { name: 'Ciroc', icon: '🥃', abv: 40.0 },
-    // ── Spirits: whiskey ──
-    { name: 'Whiskey', icon: '🥃', abv: 40.0 }, { name: 'Whiskey Sour', icon: '🥃', abv: 15.0 },
-    { name: 'Bourbon', icon: '🥃', abv: 40.0 }, { name: 'Scotch', icon: '🥃', abv: 40.0 }, { name: 'Irish Whiskey', icon: '🥃', abv: 40.0 },
-    { name: "Jack Daniel's", icon: '🥃', abv: 40.0 }, { name: 'Jack & Coke', icon: '🥃', abv: 10.0 },
-    { name: 'Jim Beam', icon: '🥃', abv: 40.0 }, { name: "Maker's Mark", icon: '🥃', abv: 45.0 },
-    { name: 'Woodford Reserve', icon: '🥃', abv: 45.2 }, { name: 'Buffalo Trace', icon: '🥃', abv: 45.0 },
-    { name: 'Bulleit Bourbon', icon: '🥃', abv: 45.0 }, { name: 'Knob Creek', icon: '🥃', abv: 50.0 },
-    { name: 'Wild Turkey', icon: '🥃', abv: 50.5 }, { name: 'Evan Williams', icon: '🥃', abv: 43.0 },
-    { name: 'Jameson', icon: '🥃', abv: 40.0 }, { name: 'Jameson & Ginger', icon: '🥃', abv: 10.0 },
-    { name: 'Bushmills', icon: '🥃', abv: 40.0 }, { name: 'Tullamore Dew', icon: '🥃', abv: 40.0 },
-    { name: 'Johnnie Walker', icon: '🥃', abv: 40.0 }, { name: 'Johnnie Walker Black', icon: '🥃', abv: 40.0 },
-    { name: 'Johnnie Walker Red', icon: '🥃', abv: 40.0 }, { name: 'Glenfiddich', icon: '🥃', abv: 40.0 },
-    { name: 'Macallan', icon: '🥃', abv: 43.0 }, { name: 'Lagavulin', icon: '🥃', abv: 43.0 },
-    { name: 'Laphroaig', icon: '🥃', abv: 43.0 }, { name: 'Glenlivet', icon: '🥃', abv: 40.0 },
-    // ── Spirits: gin ──
-    { name: 'Gin & Tonic', icon: '🥃', abv: 12.0 }, { name: 'Gin Martini', icon: '🍸', abv: 25.0 },
-    { name: 'Tanqueray', icon: '🥃', abv: 43.1 }, { name: "Hendrick's", icon: '🥃', abv: 41.4 },
-    { name: 'Bombay Sapphire', icon: '🥃', abv: 40.0 }, { name: 'Beefeater', icon: '🥃', abv: 40.0 },
-    { name: 'The Botanist', icon: '🥃', abv: 46.0 }, { name: 'Aviation Gin', icon: '🥃', abv: 42.0 },
-    // ── Spirits: rum ──
-    { name: 'Rum & Coke', icon: '🥃', abv: 10.0 }, { name: 'Rum Shot', icon: '🥃', abv: 40.0 },
-    { name: 'Captain Morgan', icon: '🥃', abv: 35.0 }, { name: 'Bacardi', icon: '🥃', abv: 40.0 },
-    { name: 'Malibu', icon: '🥃', abv: 21.0 }, { name: 'Malibu & Coke', icon: '🥃', abv: 8.0 },
-    { name: 'Kraken Rum', icon: '🥃', abv: 47.0 }, { name: 'Mount Gay', icon: '🥃', abv: 40.0 },
-    { name: 'Havana Club', icon: '🥃', abv: 40.0 }, { name: 'Diplomatico', icon: '🥃', abv: 40.0 },
-    // ── Spirits: tequila ──
-    { name: 'Tequila', icon: '🥃', abv: 40.0 }, { name: 'Tequila Shot', icon: '🥃', abv: 40.0 }, { name: 'Tequila Soda', icon: '🥃', abv: 12.0 },
-    { name: 'Jose Cuervo', icon: '🥃', abv: 38.0 }, { name: 'Patron', icon: '🥃', abv: 40.0 },
-    { name: 'Don Julio', icon: '🥃', abv: 40.0 }, { name: 'Don Julio 1942', icon: '🥃', abv: 38.0 },
-    { name: 'Casamigos', icon: '🥃', abv: 40.0 }, { name: 'Espolon', icon: '🥃', abv: 40.0 },
-    { name: 'Hornitos', icon: '🥃', abv: 40.0 }, { name: '1800 Tequila', icon: '🥃', abv: 40.0 },
-    { name: 'Clase Azul', icon: '🥃', abv: 40.0 },
-    // ── Spirits: other ──
-    { name: 'Fireball', icon: '🥃', abv: 33.0 }, { name: 'Fireball Shot', icon: '🥃', abv: 33.0 },
-    { name: 'Jägermeister', icon: '🥃', abv: 35.0 }, { name: 'Jägerbomb', icon: '🥃', abv: 7.0 },
-    { name: 'Baileys', icon: '🥃', abv: 17.0 }, { name: 'Kahlúa', icon: '🥃', abv: 20.0 },
-    { name: 'Amaretto', icon: '🥃', abv: 24.0 }, { name: 'Disaronno', icon: '🥃', abv: 28.0 },
-    { name: 'Aperol', icon: '🥃', abv: 11.0 }, { name: 'Campari', icon: '🥃', abv: 25.0 },
-    { name: 'Chambord', icon: '🥃', abv: 16.5 }, { name: 'Triple Sec', icon: '🥃', abv: 30.0 },
-    { name: 'Blue Curacao', icon: '🥃', abv: 25.0 }, { name: 'Midori', icon: '🥃', abv: 20.0 },
-    { name: 'Peach Schnapps', icon: '🥃', abv: 20.0 }, { name: 'Rumple Minze', icon: '🥃', abv: 50.0 },
-    // ── Cocktails ──
-    { name: 'Margarita', icon: '🍹', abv: 15.0 }, { name: 'Frozen Margarita', icon: '🍹', abv: 12.0 },
-    { name: 'Mojito', icon: '🍹', abv: 12.0 }, { name: 'Daiquiri', icon: '🍹', abv: 20.0 },
-    { name: 'Piña Colada', icon: '🍹', abv: 13.0 }, { name: 'Long Island Iced Tea', icon: '🍹', abv: 22.0 },
-    { name: 'Sex on the Beach', icon: '🍹', abv: 10.0 }, { name: 'Tequila Sunrise', icon: '🍹', abv: 10.0 },
-    { name: 'Paloma', icon: '🍹', abv: 12.0 }, { name: 'Dark & Stormy', icon: '🍹', abv: 14.0 },
-    { name: 'Moscow Mule', icon: '🍹', abv: 10.0 }, { name: 'Kentucky Mule', icon: '🍹', abv: 10.0 },
-    { name: 'Cosmopolitan', icon: '🍸', abv: 20.0 }, { name: 'Martini', icon: '🍸', abv: 25.0 },
-    { name: 'Negroni', icon: '🍸', abv: 24.0 }, { name: 'Old Fashioned', icon: '🥃', abv: 32.0 },
-    { name: 'Manhattan', icon: '🥃', abv: 30.0 }, { name: 'Boulevardier', icon: '🥃', abv: 28.0 },
-    { name: 'Espresso Martini', icon: '☕', abv: 18.0 }, { name: 'Irish Coffee', icon: '☕', abv: 12.0 },
-    { name: 'White Russian', icon: '🥃', abv: 18.0 }, { name: 'Black Russian', icon: '🥃', abv: 25.0 },
-    { name: 'Aperol Spritz', icon: '🥂', abv: 8.0 }, { name: 'Hugo Spritz', icon: '🥂', abv: 7.0 },
-    // ── Generic ──
-    { name: 'Shot', icon: '🥃', abv: 40.0 }, { name: 'Bomb Shot', icon: '🥃', abv: 7.0 },
+    { name: "Allagash Curieux", icon: '🍺', abv: 11.0 },
+    { name: "Allagash White", icon: '🍺', abv: 5.1 },
+    { name: "Amstel Gold", icon: '🍺', abv: 5.0 },
+    { name: "Amstel Light", icon: '🍺', abv: 3.5 },
+    { name: "Anchor Porter", icon: '🍺', abv: 5.6 },
+    { name: "Anchor Steam Beer", icon: '🍺', abv: 4.9 },
+    { name: "Asahi Black", icon: '🍺', abv: 5.0 },
+    { name: "Asahi Super Dry", icon: '🍺', abv: 5.0 },
+    { name: "Ballast Point Grapefruit Sculpin", icon: '🍺', abv: 7.0 },
+    { name: "Ballast Point Sculpin IPA", icon: '🍺', abv: 7.0 },
+    { name: "Beck's", icon: '🍺', abv: 5.0 },
+    { name: "Beck's Sapphire", icon: '🍺', abv: 6.0 },
+    { name: "Bell's Kalamazoo Stout", icon: '🍺', abv: 6.0 },
+    { name: "Bell's Oberon Ale", icon: '🍺', abv: 5.8 },
+    { name: "Bell's Porter", icon: '🍺', abv: 5.6 },
+    { name: "Bell's Two Hearted Ale", icon: '🍺', abv: 7.0 },
+    { name: "Blue Moon Belgian White", icon: '🍺', abv: 5.4 },
+    { name: "Blue Moon Light Sky", icon: '🍺', abv: 4.0 },
+    { name: "Blue Moon Mango Wheat", icon: '🍺', abv: 5.4 },
+    { name: "Boddingtons Pub Ale", icon: '🍺', abv: 4.7 },
+    { name: "Bohemia", icon: '🍺', abv: 4.9 },
+    { name: "Brahma", icon: '🍺', abv: 4.3 },
+    { name: "Bud Ice", icon: '🍺', abv: 5.5 },
+    { name: "Bud Light", icon: '🍺', abv: 4.2 },
+    { name: "Bud Light Lime", icon: '🍺', abv: 4.2 },
+    { name: "Bud Light Platinum", icon: '🍺', abv: 6.0 },
+    { name: "Budweiser", icon: '🍺', abv: 5.0 },
+    { name: "Busch", icon: '🍺', abv: 4.3 },
+    { name: "Busch Ice", icon: '🍺', abv: 5.9 },
+    { name: "Busch Light", icon: '🍺', abv: 4.1 },
+    { name: "Carlsberg", icon: '🍺', abv: 5.0 },
+    { name: "Carlsberg Special Brew", icon: '🍺', abv: 8.8 },
+    { name: "Chang Beer", icon: '🍺', abv: 5.0 },
+    { name: "Cigar City Jai Alai IPA", icon: '🍺', abv: 7.5 },
+    { name: "Cigar City Maduro Brown Ale", icon: '🍺', abv: 5.5 },
+    { name: "Coors Banquet", icon: '🍺', abv: 5.0 },
+    { name: "Coors Edge", icon: '🍺', abv: 0.5 },
+    { name: "Coors Light", icon: '🍺', abv: 4.2 },
+    { name: "Corona Extra", icon: '🍺', abv: 4.6 },
+    { name: "Corona Familiar", icon: '🍺', abv: 4.8 },
+    { name: "Corona Light", icon: '🍺', abv: 4.1 },
+    { name: "Corona Premier", icon: '🍺', abv: 4.0 },
+    { name: "Corona Refresca", icon: '🍺', abv: 4.5 },
+    { name: "Deschutes Black Butte Porter", icon: '🍺', abv: 5.2 },
+    { name: "Deschutes Fresh Squeezed IPA", icon: '🍺', abv: 6.4 },
+    { name: "Deschutes Mirror Pond", icon: '🍺', abv: 5.0 },
+    { name: "Deschutes The Abyss", icon: '🍺', abv: 11.0 },
+    { name: "Dogfish Head 120 Minute IPA", icon: '🍺', abv: 15.0 },
+    { name: "Dogfish Head 60 Minute IPA", icon: '🍺', abv: 6.0 },
+    { name: "Dogfish Head 90 Minute IPA", icon: '🍺', abv: 9.0 },
+    { name: "Dogfish Head SeaQuench Ale", icon: '🍺', abv: 4.9 },
+    { name: "Dogfish Head Slightly Mighty", icon: '🍺', abv: 4.0 },
+    { name: "Dos Equis Amber", icon: '🍺', abv: 4.7 },
+    { name: "Dos Equis Lager", icon: '🍺', abv: 4.2 },
+    { name: "Fosters", icon: '🍺', abv: 5.0 },
+    { name: "Founders All Day IPA", icon: '🍺', abv: 4.7 },
+    { name: "Founders Centennial IPA", icon: '🍺', abv: 7.2 },
+    { name: "Founders Kentucky Breakfast Stout", icon: '🍺', abv: 12.0 },
+    { name: "Fullers London Pride", icon: '🍺', abv: 4.7 },
+    { name: "Genesee Cream Ale", icon: '🍺', abv: 5.1 },
+    { name: "Goose Island 312 Urban Wheat", icon: '🍺', abv: 4.2 },
+    { name: "Goose Island Bourbon County Stout", icon: '🍺', abv: 14.7 },
+    { name: "Goose Island IPA", icon: '🍺', abv: 5.9 },
+    { name: "Goose Island Sofie", icon: '🍺', abv: 6.5 },
+    { name: "Great Lakes Dortmunder Gold", icon: '🍺', abv: 5.8 },
+    { name: "Great Lakes Edmund Fitzgerald", icon: '🍺', abv: 5.8 },
+    { name: "Guinness Draught", icon: '🍺', abv: 4.2 },
+    { name: "Guinness Extra Stout", icon: '🍺', abv: 5.6 },
+    { name: "Guinness Foreign Extra Stout", icon: '🍺', abv: 7.5 },
+    { name: "Harpoon IPA", icon: '🍺', abv: 5.9 },
+    { name: "Harpoon UFO White", icon: '🍺', abv: 4.8 },
+    { name: "Heineken", icon: '🍺', abv: 5.0 },
+    { name: "Heineken 0.0", icon: '🍺', abv: 0.0 },
+    { name: "Heineken Silver", icon: '🍺', abv: 4.0 },
+    { name: "Hobgoblin Gold", icon: '🍺', abv: 4.5 },
+    { name: "Keystone Ice", icon: '🍺', abv: 5.9 },
+    { name: "Keystone Light", icon: '🍺', abv: 4.1 },
+    { name: "Kingfisher", icon: '🍺', abv: 4.8 },
+    { name: "Kingfisher Strong", icon: '🍺', abv: 8.0 },
+    { name: "Kirin Ichiban", icon: '🍺', abv: 5.0 },
+    { name: "Kirin Light", icon: '🍺', abv: 3.2 },
+    { name: "Lagunitas DayTime", icon: '🍺', abv: 4.0 },
+    { name: "Lagunitas IPA", icon: '🍺', abv: 6.2 },
+    { name: "Lagunitas Little Sumpin'", icon: '🍺', abv: 7.5 },
+    { name: "Lagunitas Pils", icon: '🍺', abv: 6.2 },
+    { name: "Lone Star", icon: '🍺', abv: 4.7 },
+    { name: "Michelob Ultra", icon: '🍺', abv: 4.2 },
+    { name: "Michelob Ultra Pure Gold", icon: '🍺', abv: 3.8 },
+    { name: "Miller Genuine Draft", icon: '🍺', abv: 4.7 },
+    { name: "Miller High Life", icon: '🍺', abv: 4.6 },
+    { name: "Miller Lite", icon: '🍺', abv: 4.2 },
+    { name: "Modelo Chelada", icon: '🍺', abv: 3.5 },
+    { name: "Modelo Especial", icon: '🍺', abv: 4.4 },
+    { name: "Modelo Negra", icon: '🍺', abv: 5.4 },
+    { name: "Moretti", icon: '🍺', abv: 4.6 },
+    { name: "Narragansett Lager", icon: '🍺', abv: 5.0 },
+    { name: "Natural Ice", icon: '🍺', abv: 5.9 },
+    { name: "Natural Light", icon: '🍺', abv: 4.2 },
+    { name: "New Belgium Fat Tire", icon: '🍺', abv: 5.2 },
+    { name: "New Belgium Voodoo Ranger Imperial", icon: '🍺', abv: 9.0 },
+    { name: "New Belgium Voodoo Ranger IPA", icon: '🍺', abv: 7.0 },
+    { name: "Newcastle Brown Ale", icon: '🍺', abv: 4.7 },
+    { name: "North Coast Old Rasputin", icon: '🍺', abv: 9.0 },
+    { name: "Old Speckled Hen", icon: '🍺', abv: 5.2 },
+    { name: "Oskar Blues Dale's Pale Ale", icon: '🍺', abv: 6.5 },
+    { name: "Oskar Blues G'Knight", icon: '🍺', abv: 8.7 },
+    { name: "Oskar Blues Old Chub", icon: '🍺', abv: 8.0 },
+    { name: "Pabst Blue Ribbon", icon: '🍺', abv: 4.7 },
+    { name: "Pacifico", icon: '🍺', abv: 4.4 },
+    { name: "PBR Easy", icon: '🍺', abv: 3.8 },
+    { name: "Peroni Nastro Azzurro", icon: '🍺', abv: 5.1 },
+    { name: "Presidente", icon: '🍺', abv: 5.0 },
+    { name: "Rolling Rock", icon: '🍺', abv: 4.5 },
+    { name: "Russian River Pliny the Elder", icon: '🍺', abv: 8.0 },
+    { name: "Russian River Pliny the Younger", icon: '🍺', abv: 11.0 },
+    { name: "Sam Adams Boston Lager", icon: '🍺', abv: 5.0 },
+    { name: "Sam Adams OctoberFest", icon: '🍺', abv: 5.3 },
+    { name: "Sam Adams Seasonal", icon: '🍺', abv: 5.3 },
+    { name: "Sam Adams Summer Ale", icon: '🍺', abv: 5.3 },
+    { name: "Sam Adams Wicked Easy", icon: '🍺', abv: 4.5 },
+    { name: "Sam Adams Winter Lager", icon: '🍺', abv: 5.8 },
+    { name: "San Miguel", icon: '🍺', abv: 5.0 },
+    { name: "Sapporo Premium", icon: '🍺', abv: 4.9 },
+    { name: "Sapporo Reserve", icon: '🍺', abv: 5.5 },
+    { name: "Shiner Bock", icon: '🍺', abv: 4.4 },
+    { name: "Shiner Light Blonde", icon: '🍺', abv: 3.9 },
+    { name: "Shock Top Belgian White", icon: '🍺', abv: 5.2 },
+    { name: "Shock Top Lemon Shandy", icon: '🍺', abv: 4.2 },
+    { name: "Sierra Nevada Bigfoot", icon: '🍺', abv: 9.6 },
+    { name: "Sierra Nevada Celebration", icon: '🍺', abv: 6.8 },
+    { name: "Sierra Nevada Hazy Little Thing", icon: '🍺', abv: 6.7 },
+    { name: "Sierra Nevada Pale Ale", icon: '🍺', abv: 5.6 },
+    { name: "Sierra Nevada Torpedo", icon: '🍺', abv: 7.2 },
+    { name: "Singha", icon: '🍺', abv: 5.0 },
+    { name: "Skol", icon: '🍺', abv: 4.7 },
+    { name: "Sol", icon: '🍺', abv: 4.5 },
+    { name: "Stella Artois", icon: '🍺', abv: 5.0 },
+    { name: "Stone Arrogant Bastard", icon: '🍺', abv: 7.2 },
+    { name: "Stone Delicious IPA", icon: '🍺', abv: 7.7 },
+    { name: "Stone Enjoy By IPA", icon: '🍺', abv: 9.4 },
+    { name: "Stone Go To IPA", icon: '🍺', abv: 4.8 },
+    { name: "Stone IPA", icon: '🍺', abv: 6.9 },
+    { name: "Stone Ruination", icon: '🍺', abv: 8.5 },
+    { name: "Sweetwater 420 Extra Pale Ale", icon: '🍺', abv: 5.7 },
+    { name: "Sweetwater IPA", icon: '🍺', abv: 6.3 },
+    { name: "Tecate", icon: '🍺', abv: 4.5 },
+    { name: "Tecate Light", icon: '🍺', abv: 3.9 },
+    { name: "Tennent's", icon: '🍺', abv: 4.0 },
+    { name: "Tennent's Super", icon: '🍺', abv: 9.0 },
+    { name: "Tiger Beer", icon: '🍺', abv: 5.0 },
+    { name: "Toppling Goliath Pseudo Sue", icon: '🍺', abv: 5.8 },
+    { name: "Tr\u00f6egs Mad Elf", icon: '🍺', abv: 11.0 },
+    { name: "Tr\u00f6egs Nugget Nectar", icon: '🍺', abv: 7.5 },
+    { name: "Tr\u00f6egs Perpetual IPA", icon: '🍺', abv: 7.5 },
+    { name: "Tsingtao", icon: '🍺', abv: 4.7 },
+    { name: "Victoria Bitter", icon: '🍺', abv: 4.9 },
+    { name: "Wychwood Hobgoblin", icon: '🍺', abv: 5.2 },
+    { name: "Yuengling Black & Tan", icon: '🍺', abv: 4.7 },
+    { name: "Yuengling Lager", icon: '🍺', abv: 4.4 },
+    { name: "Yuengling Light", icon: '🍺', abv: 3.8 },
+    { name: "Bon & Viv Spiked Seltzer", icon: '💧', abv: 4.5 },
+    { name: "Bud Light Seltzer", icon: '💧', abv: 5.0 },
+    { name: "Bud Light Seltzer Lemonade", icon: '💧', abv: 5.0 },
+    { name: "Bud Light Seltzer Platinum", icon: '💧', abv: 8.0 },
+    { name: "Corona Hard Seltzer", icon: '💧', abv: 4.5 },
+    { name: "Corona Refresca Spiked", icon: '💧', abv: 4.5 },
+    { name: "Crook & Marker Spiked Seltzer", icon: '💧', abv: 3.2 },
+    { name: "High Noon Black Cherry", icon: '💧', abv: 4.5 },
+    { name: "High Noon Grapefruit", icon: '💧', abv: 4.5 },
+    { name: "High Noon Peach", icon: '💧', abv: 4.5 },
+    { name: "High Noon Pineapple", icon: '💧', abv: 4.5 },
+    { name: "High Noon Sun Sips", icon: '💧', abv: 4.5 },
+    { name: "High Noon Watermelon", icon: '💧', abv: 4.5 },
+    { name: "Michelob Ultra Seltzer", icon: '💧', abv: 4.0 },
+    { name: "Natty Light Seltzer", icon: '💧', abv: 6.0 },
+    { name: "Smirnoff Ice", icon: '💧', abv: 5.0 },
+    { name: "Smirnoff Ice Screwdriver", icon: '💧', abv: 5.8 },
+    { name: "Truly Extra Hard Seltzer", icon: '💧', abv: 8.0 },
+    { name: "Truly Hard Seltzer", icon: '💧', abv: 5.0 },
+    { name: "Truly Lemonade", icon: '💧', abv: 5.0 },
+    { name: "Truly Punch", icon: '💧', abv: 5.0 },
+    { name: "Truly Wild Berry", icon: '💧', abv: 5.0 },
+    { name: "Vizzy Hard Seltzer", icon: '💧', abv: 5.0 },
+    { name: "Vizzy Lemonade", icon: '💧', abv: 5.0 },
+    { name: "White Claw Black Cherry", icon: '💧', abv: 5.0 },
+    { name: "White Claw Hard Seltzer", icon: '💧', abv: 5.0 },
+    { name: "White Claw Mango", icon: '💧', abv: 5.0 },
+    { name: "White Claw Natural Lime", icon: '💧', abv: 5.0 },
+    { name: "White Claw Raspberry", icon: '💧', abv: 5.0 },
+    { name: "White Claw Surge", icon: '💧', abv: 8.0 },
+    { name: "White Claw Tangerine", icon: '💧', abv: 5.0 },
+    { name: "White Claw Watermelon", icon: '💧', abv: 5.0 },
+    { name: "Ace Joker Cider", icon: '🍎', abv: 8.3 },
+    { name: "Ace Perry Cider", icon: '🍎', abv: 5.0 },
+    { name: "Angry Orchard Crisp Apple", icon: '🍎', abv: 5.0 },
+    { name: "Angry Orchard Green Apple", icon: '🍎', abv: 5.0 },
+    { name: "Angry Orchard Rose", icon: '🍎', abv: 5.0 },
+    { name: "Angry Orchard Stone Dry", icon: '🍎', abv: 5.0 },
+    { name: "Bantam Ginger", icon: '🍎', abv: 6.9 },
+    { name: "Bantam Wunderkind", icon: '🍎', abv: 6.9 },
+    { name: "Bold Rock Hard Cider", icon: '🍎', abv: 4.7 },
+    { name: "Crispin Original", icon: '🍎', abv: 5.0 },
+    { name: "Kopparberg Mixed Fruit", icon: '🍎', abv: 4.0 },
+    { name: "Magners Original", icon: '🍎', abv: 4.5 },
+    { name: "Magners Pear", icon: '🍎', abv: 4.5 },
+    { name: "Rekorderlig Strawberry-Lime", icon: '🍎', abv: 4.0 },
+    { name: "Stella Artois Cidre", icon: '🍎', abv: 4.5 },
+    { name: "Strongbow Dark Fruit", icon: '🍎', abv: 4.0 },
+    { name: "Strongbow Gold Apple", icon: '🍎', abv: 5.0 },
+    { name: "Strongbow Original", icon: '🍎', abv: 5.0 },
+    { name: "Woodchuck Amber Cider", icon: '🍎', abv: 5.0 },
+    { name: "Woodchuck Granny Smith", icon: '🍎', abv: 5.0 },
+    { name: "Twisted Tea Half & Half", icon: '🍵', abv: 5.0 },
+    { name: "Twisted Tea Hard Iced Tea", icon: '🍵', abv: 5.0 },
+    { name: "Twisted Tea Light", icon: '🍵', abv: 4.0 },
+    { name: "Mike's Hard Lemonade", icon: '🍋', abv: 5.0 },
+    { name: "Mike's Harder Lemonade", icon: '🍋', abv: 8.0 },
+    { name: "Apothic Red", icon: '🍷', abv: 13.5 },
+    { name: "Apothic Ros\u00e9", icon: '🍷', abv: 12.5 },
+    { name: "Apothic White", icon: '🍷', abv: 12.5 },
+    { name: "Barefoot Cabernet Sauvignon", icon: '🍷', abv: 13.0 },
+    { name: "Barefoot Moscato", icon: '🍷', abv: 9.0 },
+    { name: "Barefoot Pinot Grigio", icon: '🍷', abv: 12.5 },
+    { name: "Barefoot Ros\u00e9", icon: '🍷', abv: 11.0 },
+    { name: "Black Box Cabernet Sauvignon", icon: '🍷', abv: 13.5 },
+    { name: "Bota Box Cabernet Sauvignon", icon: '🍷', abv: 13.0 },
+    { name: "Bota Box Pinot Grigio", icon: '🍷', abv: 12.0 },
+    { name: "Caymus Cabernet Sauvignon", icon: '🍷', abv: 14.8 },
+    { name: "Chateau Ste Michelle Riesling", icon: '🍷', abv: 12.0 },
+    { name: "Duckhorn Sauvignon Blanc", icon: '🍷', abv: 13.5 },
+    { name: "Franzia Chardonnay", icon: '🍷', abv: 13.0 },
+    { name: "Franzia White Zinfandel", icon: '🍷', abv: 9.0 },
+    { name: "Jordan Cabernet Sauvignon", icon: '🍷', abv: 13.5 },
+    { name: "Josh Cellars Cabernet Sauvignon", icon: '🍷', abv: 13.5 },
+    { name: "Josh Cellars Pinot Noir", icon: '🍷', abv: 13.5 },
+    { name: "Kendall-Jackson Chardonnay", icon: '🍷', abv: 13.5 },
+    { name: "Kim Crawford Pinot Noir", icon: '🍷', abv: 13.0 },
+    { name: "Kim Crawford Sauvignon Blanc", icon: '🍷', abv: 12.5 },
+    { name: "Meiomi Pinot Noir", icon: '🍷', abv: 13.5 },
+    { name: "Opus One", icon: '🍷', abv: 14.5 },
+    { name: "Rombauer Chardonnay", icon: '🍷', abv: 14.5 },
+    { name: "Santa Margherita Pinot Grigio", icon: '🍷', abv: 12.0 },
+    { name: "Silver Oak Cabernet Sauvignon", icon: '🍷', abv: 14.0 },
+    { name: "Sonoma-Cutrer Chardonnay", icon: '🍷', abv: 14.0 },
+    { name: "Stag's Leap Chardonnay", icon: '🍷', abv: 13.5 },
+    { name: "Whispering Angel Ros\u00e9", icon: '🍷', abv: 13.0 },
+    { name: "Dom P\u00e9rignon", icon: '🥂', abv: 12.5 },
+    { name: "Freixenet Cava", icon: '🥂', abv: 11.5 },
+    { name: "La Marca Prosecco", icon: '🥂', abv: 11.0 },
+    { name: "Lamarca Prosecco Ros\u00e9", icon: '🥂', abv: 11.0 },
+    { name: "Mo\u00ebt & Chandon Brut", icon: '🥂', abv: 12.0 },
+    { name: "Ruffino Prosecco", icon: '🥂', abv: 11.0 },
+    { name: "Veuve Clicquot Brut", icon: '🥂', abv: 12.0 },
+    { name: "1800 Coconut", icon: '🥃', abv: 35.0 },
+    { name: "1800 Reposado", icon: '🥃', abv: 40.0 },
+    { name: "1800 Silver", icon: '🥃', abv: 40.0 },
+    { name: "Absinthe", icon: '🥃', abv: 68.0 },
+    { name: "Absolut", icon: '🥃', abv: 40.0 },
+    { name: "Absolut Citron", icon: '🥃', abv: 40.0 },
+    { name: "Absolut Raspberri", icon: '🥃', abv: 40.0 },
+    { name: "Absolut Vanilla", icon: '🥃', abv: 40.0 },
+    { name: "Amaretto di Saronno", icon: '🥃', abv: 28.0 },
+    { name: "Angel's Envy", icon: '🥃', abv: 43.3 },
+    { name: "Aperol", icon: '🥃', abv: 11.0 },
+    { name: "Appleton Estate 8 Year", icon: '🥃', abv: 43.0 },
+    { name: "Appleton Estate Signature", icon: '🥃', abv: 40.0 },
+    { name: "Aviation American Gin", icon: '🥃', abv: 42.0 },
+    { name: "Avion Reposado", icon: '🥃', abv: 40.0 },
+    { name: "Avion Silver", icon: '🥃', abv: 40.0 },
+    { name: "Bacardi 151", icon: '🥃', abv: 75.5 },
+    { name: "Bacardi Coconut", icon: '🥃', abv: 35.0 },
+    { name: "Bacardi Gold", icon: '🥃', abv: 40.0 },
+    { name: "Bacardi Lim\u00f3n", icon: '🥃', abv: 35.0 },
+    { name: "Bacardi Spiced", icon: '🥃', abv: 35.0 },
+    { name: "Bacardi Superior", icon: '🥃', abv: 40.0 },
+    { name: "Baileys Almande", icon: '🥃', abv: 13.0 },
+    { name: "Baileys Irish Cream", icon: '🥃', abv: 17.0 },
+    { name: "Balvenie DoubleWood 12 Year", icon: '🥃', abv: 40.0 },
+    { name: "Basil Hayden's", icon: '🥃', abv: 40.0 },
+    { name: "Beefeater 24", icon: '🥃', abv: 45.0 },
+    { name: "Beefeater London Dry", icon: '🥃', abv: 40.0 },
+    { name: "Belvedere", icon: '🥃', abv: 40.0 },
+    { name: "Benedictine", icon: '🥃', abv: 40.0 },
+    { name: "Blanton's Single Barrel", icon: '🥃', abv: 46.5 },
+    { name: "Blue Cura\u00e7ao", icon: '🥃', abv: 25.0 },
+    { name: "Bombay Bramble", icon: '🥃', abv: 37.5 },
+    { name: "Bombay Sapphire", icon: '🥃', abv: 40.0 },
+    { name: "Buffalo Trace", icon: '🥃', abv: 45.0 },
+    { name: "Bulleit Bourbon", icon: '🥃', abv: 45.0 },
+    { name: "Bulleit Rye", icon: '🥃', abv: 45.0 },
+    { name: "Bumbu Original", icon: '🥃', abv: 35.0 },
+    { name: "Burnett's Vodka", icon: '🥃', abv: 40.0 },
+    { name: "Bushmills Black Bush", icon: '🥃', abv: 40.0 },
+    { name: "Bushmills Original", icon: '🥃', abv: 40.0 },
+    { name: "Campari", icon: '🥃', abv: 25.0 },
+    { name: "Canadian Club", icon: '🥃', abv: 40.0 },
+    { name: "Captain Morgan Black", icon: '🥃', abv: 40.0 },
+    { name: "Captain Morgan Coconut", icon: '🥃', abv: 21.0 },
+    { name: "Captain Morgan Original Spiced", icon: '🥃', abv: 35.0 },
+    { name: "Captain Morgan White Rum", icon: '🥃', abv: 40.0 },
+    { name: "Casamigos A\u00f1ejo", icon: '🥃', abv: 40.0 },
+    { name: "Casamigos Blanco", icon: '🥃', abv: 40.0 },
+    { name: "Casamigos Mezcal", icon: '🥃', abv: 40.0 },
+    { name: "Casamigos Reposado", icon: '🥃', abv: 40.0 },
+    { name: "Chambord Black Raspberry", icon: '🥃', abv: 16.5 },
+    { name: "Chartreuse Green", icon: '🥃', abv: 55.0 },
+    { name: "Chartreuse Yellow", icon: '🥃', abv: 40.0 },
+    { name: "Ciroc", icon: '🥃', abv: 40.0 },
+    { name: "Ciroc Peach", icon: '🥃', abv: 37.5 },
+    { name: "Clase Azul Plata", icon: '🥃', abv: 40.0 },
+    { name: "Clase Azul Reposado", icon: '🥃', abv: 40.0 },
+    { name: "Cointreau", icon: '🥃', abv: 40.0 },
+    { name: "Crown Royal", icon: '🥃', abv: 40.0 },
+    { name: "Crown Royal Apple", icon: '🥃', abv: 35.0 },
+    { name: "Crown Royal Peach", icon: '🥃', abv: 35.0 },
+    { name: "Crown Royal Vanilla", icon: '🥃', abv: 35.0 },
+    { name: "Crown Royal XO", icon: '🥃', abv: 40.0 },
+    { name: "Crown Royal XR", icon: '🥃', abv: 40.0 },
+    { name: "Crystal Head Vodka", icon: '🥃', abv: 40.0 },
+    { name: "Cynar", icon: '🥃', abv: 16.5 },
+    { name: "Dalmore 12 Year", icon: '🥃', abv: 40.0 },
+    { name: "Deep Eddy Lemon", icon: '🥃', abv: 35.0 },
+    { name: "Deep Eddy Ruby Red", icon: '🥃', abv: 35.0 },
+    { name: "Deep Eddy Vodka", icon: '🥃', abv: 40.0 },
+    { name: "DeKuyper Peach Schnapps", icon: '🥃', abv: 20.0 },
+    { name: "Del Maguey Mezcal", icon: '🥃', abv: 46.0 },
+    { name: "Diplomatico Planas", icon: '🥃', abv: 47.0 },
+    { name: "Diplomatico Reserva Exclusiva", icon: '🥃', abv: 40.0 },
+    { name: "Disaronno Originale", icon: '🥃', abv: 28.0 },
+    { name: "Don Julio 1942", icon: '🥃', abv: 38.0 },
+    { name: "Don Julio 70", icon: '🥃', abv: 35.0 },
+    { name: "Don Julio A\u00f1ejo", icon: '🥃', abv: 40.0 },
+    { name: "Don Julio Blanco", icon: '🥃', abv: 40.0 },
+    { name: "Don Julio Real", icon: '🥃', abv: 40.0 },
+    { name: "Don Julio Reposado", icon: '🥃', abv: 40.0 },
+    { name: "Drambuie", icon: '🥃', abv: 40.0 },
+    { name: "Drumshanbo Gunpowder Gin", icon: '🥃', abv: 43.0 },
+    { name: "E.H. Taylor Small Batch", icon: '🥃', abv: 50.0 },
+    { name: "Eagle Rare 10 Year", icon: '🥃', abv: 45.0 },
+    { name: "El Dorado 15 Year", icon: '🥃', abv: 43.0 },
+    { name: "El Jimador Blanco", icon: '🥃', abv: 40.0 },
+    { name: "El Jimador Reposado", icon: '🥃', abv: 40.0 },
+    { name: "Elijah Craig Barrel Proof", icon: '🥃', abv: 60.0 },
+    { name: "Elijah Craig Small Batch", icon: '🥃', abv: 47.0 },
+    { name: "Empress 1908 Gin", icon: '🥃', abv: 42.5 },
+    { name: "Espolon Blanco", icon: '🥃', abv: 40.0 },
+    { name: "Espolon Reposado", icon: '🥃', abv: 40.0 },
+    { name: "Evan Williams Black Label", icon: '🥃', abv: 43.0 },
+    { name: "Evan Williams Honey", icon: '🥃', abv: 35.0 },
+    { name: "Fireball Cinnamon Whisky", icon: '🥃', abv: 33.0 },
+    { name: "Flor de Ca\u00f1a 7 Year", icon: '🥃', abv: 40.0 },
+    { name: "Four Roses Single Barrel", icon: '🥃', abv: 50.0 },
+    { name: "Four Roses Small Batch", icon: '🥃', abv: 45.0 },
+    { name: "Frangelico", icon: '🥃', abv: 20.0 },
+    { name: "Glenfiddich 12 Year", icon: '🥃', abv: 40.0 },
+    { name: "Glenfiddich 18 Year", icon: '🥃', abv: 40.0 },
+    { name: "Glenfiddich 21 Year", icon: '🥃', abv: 43.0 },
+    { name: "Glenlivet 12 Year", icon: '🥃', abv: 40.0 },
+    { name: "Glenlivet 18 Year", icon: '🥃', abv: 40.0 },
+    { name: "Goldschl\u00e4ger", icon: '🥃', abv: 43.5 },
+    { name: "Gordon's London Dry", icon: '🥃', abv: 37.5 },
+    { name: "Gosling's Black Seal", icon: '🥃', abv: 40.0 },
+    { name: "Grand Marnier", icon: '🥃', abv: 40.0 },
+    { name: "Grey Goose", icon: '🥃', abv: 40.0 },
+    { name: "Grey Goose L'Orange", icon: '🥃', abv: 40.0 },
+    { name: "Grey Goose La Poire", icon: '🥃', abv: 40.0 },
+    { name: "Grey Goose Le Citron", icon: '🥃', abv: 40.0 },
+    { name: "Haku Vodka", icon: '🥃', abv: 40.0 },
+    { name: "Havana Club 3 Year", icon: '🥃', abv: 40.0 },
+    { name: "Havana Club 7 Year", icon: '🥃', abv: 40.0 },
+    { name: "Heaven Hill", icon: '🥃', abv: 40.0 },
+    { name: "Hendrick's Gin", icon: '🥃', abv: 41.4 },
+    { name: "Hendrick's Lunar", icon: '🥃', abv: 43.4 },
+    { name: "Hendrick's Orbium", icon: '🥃', abv: 43.4 },
+    { name: "Henry McKenna Single Barrel", icon: '🥃', abv: 50.0 },
+    { name: "Herradura Reposado", icon: '🥃', abv: 40.0 },
+    { name: "Herradura Silver", icon: '🥃', abv: 40.0 },
+    { name: "Highland Park 12 Year", icon: '🥃', abv: 40.0 },
+    { name: "Hornitos Plata", icon: '🥃', abv: 40.0 },
+    { name: "Hornitos Reposado", icon: '🥃', abv: 40.0 },
+    { name: "Ilegal Mezcal Joven", icon: '🥃', abv: 40.0 },
+    { name: "Irish Mist", icon: '🥃', abv: 35.0 },
+    { name: "Jack Daniel's Gentleman Jack", icon: '🥃', abv: 40.0 },
+    { name: "Jack Daniel's Old No. 7", icon: '🥃', abv: 40.0 },
+    { name: "Jack Daniel's Single Barrel", icon: '🥃', abv: 45.0 },
+    { name: "Jack Daniel's Tennessee Apple", icon: '🥃', abv: 35.0 },
+    { name: "Jack Daniel's Tennessee Fire", icon: '🥃', abv: 35.0 },
+    { name: "Jack Daniel's Tennessee Honey", icon: '🥃', abv: 35.0 },
+    { name: "Jameson", icon: '🥃', abv: 40.0 },
+    { name: "Jameson Black Barrel", icon: '🥃', abv: 40.0 },
+    { name: "Jameson Caskmates IPA", icon: '🥃', abv: 40.0 },
+    { name: "Jameson Orange", icon: '🥃', abv: 30.0 },
+    { name: "Jim Beam Apple", icon: '🥃', abv: 32.5 },
+    { name: "Jim Beam Black", icon: '🥃', abv: 43.0 },
+    { name: "Jim Beam Double Oak", icon: '🥃', abv: 43.0 },
+    { name: "Jim Beam Honey", icon: '🥃', abv: 32.5 },
+    { name: "Jim Beam Vanilla", icon: '🥃', abv: 32.5 },
+    { name: "Jim Beam White Label", icon: '🥃', abv: 40.0 },
+    { name: "Johnnie Walker Black Label", icon: '🥃', abv: 40.0 },
+    { name: "Johnnie Walker Blue Label", icon: '🥃', abv: 40.0 },
+    { name: "Johnnie Walker Double Black", icon: '🥃', abv: 40.0 },
+    { name: "Johnnie Walker Green Label", icon: '🥃', abv: 43.0 },
+    { name: "Johnnie Walker Red Label", icon: '🥃', abv: 40.0 },
+    { name: "Jose Cuervo Especial Gold", icon: '🥃', abv: 38.0 },
+    { name: "Jose Cuervo Silver", icon: '🥃', abv: 40.0 },
+    { name: "Jose Cuervo Tradicional", icon: '🥃', abv: 38.0 },
+    { name: "J\u00e4germeister", icon: '🥃', abv: 35.0 },
+    { name: "J\u00e4germeister Cold Brew", icon: '🥃', abv: 33.0 },
+    { name: "Kahl\u00faa Coffee Liqueur", icon: '🥃', abv: 20.0 },
+    { name: "Kahl\u00faa Peppermint Mocha", icon: '🥃', abv: 20.0 },
+    { name: "Ketel One", icon: '🥃', abv: 40.0 },
+    { name: "Ketel One Botanical Peach & Orange Blossom", icon: '🥃', abv: 30.0 },
+    { name: "Knob Creek Rye", icon: '🥃', abv: 50.0 },
+    { name: "Knob Creek Single Barrel", icon: '🥃', abv: 60.0 },
+    { name: "Knob Creek Small Batch", icon: '🥃', abv: 50.0 },
+    { name: "Kraken Black Spiced Rum", icon: '🥃', abv: 47.0 },
+    { name: "Kraken Gold Spiced Rum", icon: '🥃', abv: 40.0 },
+    { name: "Lagavulin 16 Year", icon: '🥃', abv: 43.0 },
+    { name: "Laphroaig 10 Year", icon: '🥃', abv: 43.0 },
+    { name: "Larceny Small Batch", icon: '🥃', abv: 46.0 },
+    { name: "Lillet Blanc", icon: '🥃', abv: 17.0 },
+    { name: "Lillet Ros\u00e9", icon: '🥃', abv: 17.0 },
+    { name: "Lobos 1707 Tequila", icon: '🥃', abv: 40.0 },
+    { name: "Macallan 12 Year", icon: '🥃', abv: 43.0 },
+    { name: "Macallan 18 Year", icon: '🥃', abv: 43.0 },
+    { name: "Macallan Rare Cask", icon: '🥃', abv: 43.0 },
+    { name: "Maker's Mark", icon: '🥃', abv: 45.0 },
+    { name: "Maker's Mark 46", icon: '🥃', abv: 47.0 },
+    { name: "Malfy Gin Con Limone", icon: '🥃', abv: 41.0 },
+    { name: "Malibu Black", icon: '🥃', abv: 35.0 },
+    { name: "Malibu Original", icon: '🥃', abv: 21.0 },
+    { name: "Malibu Passion Fruit", icon: '🥃', abv: 21.0 },
+    { name: "Michter's US*1 Bourbon", icon: '🥃', abv: 45.7 },
+    { name: "Midori Melon Liqueur", icon: '🥃', abv: 20.0 },
+    { name: "Monkey 47", icon: '🥃', abv: 47.0 },
+    { name: "Montelobos Mezcal", icon: '🥃', abv: 43.2 },
+    { name: "Mount Gay Eclipse", icon: '🥃', abv: 40.0 },
+    { name: "Mount Gay XO", icon: '🥃', abv: 43.0 },
+    { name: "Myers's Dark Rum", icon: '🥃', abv: 40.0 },
+    { name: "New Amsterdam Vodka", icon: '🥃', abv: 40.0 },
+    { name: "Nolet's Silver Dry Gin", icon: '🥃', abv: 47.6 },
+    { name: "Oban 14 Year", icon: '🥃', abv: 43.0 },
+    { name: "Old Forester 1920", icon: '🥃', abv: 57.5 },
+    { name: "Old Forester 86", icon: '🥃', abv: 43.0 },
+    { name: "Old Grand-Dad 114", icon: '🥃', abv: 57.0 },
+    { name: "Olmeca Altos Plata", icon: '🥃', abv: 40.0 },
+    { name: "Olmeca Altos Reposado", icon: '🥃', abv: 40.0 },
+    { name: "Ouzo", icon: '🥃', abv: 40.0 },
+    { name: "Pappy Van Winkle 15 Year", icon: '🥃', abv: 53.5 },
+    { name: "Pappy Van Winkle 20 Year", icon: '🥃', abv: 45.2 },
+    { name: "Patron Anejo", icon: '🥃', abv: 40.0 },
+    { name: "Patron Reposado", icon: '🥃', abv: 40.0 },
+    { name: "Patron Silver", icon: '🥃', abv: 40.0 },
+    { name: "Patron XO Cafe", icon: '🥃', abv: 35.0 },
+    { name: "Peach Schnapps", icon: '🥃', abv: 20.0 },
+    { name: "Pendleton Whisky", icon: '🥃', abv: 40.0 },
+    { name: "Pimm's Blackberry & Elderflower", icon: '🥃', abv: 25.0 },
+    { name: "Pimm's No. 1", icon: '🥃', abv: 25.0 },
+    { name: "Pinnacle Vodka", icon: '🥃', abv: 40.0 },
+    { name: "Plantation 3 Stars", icon: '🥃', abv: 41.2 },
+    { name: "Plantation Original Dark", icon: '🥃', abv: 40.0 },
+    { name: "Putaendo Mezcal", icon: '🥃', abv: 40.0 },
+    { name: "Redbreast 12 Year", icon: '🥃', abv: 40.0 },
+    { name: "Roku Japanese Gin", icon: '🥃', abv: 43.0 },
+    { name: "Ron Zacapa 23", icon: '🥃', abv: 40.0 },
+    { name: "Rumple Minze", icon: '🥃', abv: 50.0 },
+    { name: "Sailor Jerry Spiced Rum", icon: '🥃', abv: 46.0 },
+    { name: "Sambuca", icon: '🥃', abv: 38.0 },
+    { name: "Sauza Signature Blue Silver", icon: '🥃', abv: 40.0 },
+    { name: "Seagram's 7 Crown", icon: '🥃', abv: 40.0 },
+    { name: "Seagram's Extra Dry Gin", icon: '🥃', abv: 40.0 },
+    { name: "Sipsmith London Dry", icon: '🥃', abv: 41.6 },
+    { name: "Skyy Vodka", icon: '🥃', abv: 40.0 },
+    { name: "Smirnoff No. 21", icon: '🥃', abv: 40.0 },
+    { name: "Smirnoff Watermelon", icon: '🥃', abv: 35.0 },
+    { name: "Southern Comfort", icon: '🥃', abv: 35.0 },
+    { name: "St-Germain Elderflower", icon: '🥃', abv: 20.0 },
+    { name: "St. Germain", icon: '🥃', abv: 20.0 },
+    { name: "Stolichnaya", icon: '🥃', abv: 40.0 },
+    { name: "Stolichnaya Elit", icon: '🥃', abv: 40.0 },
+    { name: "Svedka", icon: '🥃', abv: 40.0 },
+    { name: "Tanqueray London Dry", icon: '🥃', abv: 43.1 },
+    { name: "Tanqueray No. Ten", icon: '🥃', abv: 47.3 },
+    { name: "Tanqueray Rangpur", icon: '🥃', abv: 41.3 },
+    { name: "Tanqueray Sevilla Orange", icon: '🥃', abv: 41.3 },
+    { name: "Teremana Blanco", icon: '🥃', abv: 40.0 },
+    { name: "Teremana Reposado", icon: '🥃', abv: 40.0 },
+    { name: "The Botanist", icon: '🥃', abv: 46.0 },
+    { name: "Tito's Handmade Vodka", icon: '🥃', abv: 40.0 },
+    { name: "Tres Generaciones Plata", icon: '🥃', abv: 40.0 },
+    { name: "Triple Sec", icon: '🥃', abv: 30.0 },
+    { name: "Tullamore Dew", icon: '🥃', abv: 40.0 },
+    { name: "UV Vodka", icon: '🥃', abv: 40.0 },
+    { name: "Volcan De Mi Tierra Blanco", icon: '🥃', abv: 40.0 },
+    { name: "Weller Antique 107", icon: '🥃', abv: 53.5 },
+    { name: "Weller Special Reserve", icon: '🥃', abv: 45.0 },
+    { name: "Wheatley Vodka", icon: '🥃', abv: 41.0 },
+    { name: "Whitley Neill Rhubarb & Ginger", icon: '🥃', abv: 43.0 },
+    { name: "Wild Turkey 101", icon: '🥃', abv: 50.5 },
+    { name: "Wild Turkey American Honey", icon: '🥃', abv: 35.5 },
+    { name: "Wild Turkey Rare Breed", icon: '🥃', abv: 58.4 },
+    { name: "Woodford Reserve", icon: '🥃', abv: 45.2 },
+    { name: "Woodford Reserve Double Oaked", icon: '🥃', abv: 43.2 },
   ];
 
   let recentDrinks = JSON.parse(localStorage.getItem('dt-recent') || '[]');
