@@ -6,7 +6,7 @@
   <title>Drink Tracker</title>
 
   <link rel="manifest" href="manifest.json" />
-  <meta name="theme-color" content="#BA7517" />
+  <meta name="theme-color" content="#f5ede0" />
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
@@ -21,28 +21,32 @@
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --amber: #BA7517;
-      --amber-dark: #854F0B;
-      --amber-light: #EF9F27;
-      --bg: #0f0a02;
-      --surface: #1c1206;
-      --surface2: #261a08;
-      --border: rgba(186,117,23,0.18);
-      --border-focus: rgba(186,117,23,0.6);
-      --text: #f5e6cc;
-      --text-muted: #a08050;
-      --text-dim: #5c4020;
-      --green: #5a9e3a;
-      --red: #c04040;
-      --radius: 14px;
-      --radius-sm: 9px;
+      --bg: #f5ede0;
+      --bg2: #faf6f0;
+      --surface: rgba(255,255,255,0.72);
+      --surface2: rgba(255,255,255,0.5);
+      --border: rgba(0,0,0,0.07);
+      --border-focus: rgba(224,130,40,0.5);
+      --accent: #e07820;
+      --accent-dark: #b85e10;
+      --text: #1a1208;
+      --text-muted: #8a7060;
+      --text-dim: #b8a898;
+      --green: #3a7d2a;
+      --red: #b03030;
+      --radius: 18px;
+      --radius-sm: 12px;
+      --blob1: #fddba0;
+      --blob2: #f5c4a0;
+      --blob3: #c8d8f0;
+      --blob4: #d8c8f0;
     }
 
     html, body {
       height: 100%;
       background: var(--bg);
       color: var(--text);
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Rounded', 'Segoe UI', sans-serif;
       -webkit-font-smoothing: antialiased;
       overscroll-behavior: none;
     }
@@ -52,6 +56,45 @@
 
     .screen { display: none; flex-direction: column; min-height: 100dvh; padding-bottom: 2rem; }
     .screen.active { display: flex; }
+
+    /* ── Gradient blob background ── */
+    .blob-bg {
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 260px;
+      overflow: hidden;
+      z-index: 0;
+      pointer-events: none;
+    }
+    .blob-bg::before {
+      content: '';
+      position: absolute;
+      width: 220px; height: 220px;
+      border-radius: 50%;
+      background: var(--blob1);
+      top: -60px; left: -40px;
+      opacity: 0.9;
+    }
+    .blob-bg::after {
+      content: '';
+      position: absolute;
+      width: 200px; height: 200px;
+      border-radius: 50%;
+      background: var(--blob3);
+      top: 20px; right: -50px;
+      opacity: 0.7;
+    }
+    .blob-extra {
+      position: absolute;
+      width: 180px; height: 180px;
+      border-radius: 50%;
+      background: var(--blob2);
+      top: 80px; left: 60px;
+      opacity: 0.6;
+      pointer-events: none;
+      z-index: 0;
+    }
+    .screen-content { position: relative; z-index: 1; display: flex; flex-direction: column; flex: 1; }
 
     /* ── Top bar ── */
     .topbar {
@@ -63,27 +106,30 @@
     .topbar-left { display: flex; align-items: center; gap: 10px; }
     .app-icon {
       width: 34px; height: 34px;
-      background: var(--amber);
-      border-radius: 8px;
+      background: var(--accent);
+      border-radius: 10px;
       display: flex; align-items: center; justify-content: center;
       font-size: 18px;
       flex-shrink: 0;
+      box-shadow: 0 2px 8px rgba(224,120,32,0.3);
     }
-    .app-title { font-size: 17px; font-weight: 600; color: var(--text); }
+    .app-title { font-size: 17px; font-weight: 700; color: var(--text); }
 
     .icon-btn {
       width: 34px; height: 34px;
       background: var(--surface);
       border: 0.5px solid var(--border);
-      border-radius: 8px;
+      border-radius: 10px;
       display: flex; align-items: center; justify-content: center;
       cursor: pointer;
       -webkit-tap-highlight-color: transparent;
       color: var(--text-muted);
       font-size: 17px;
       flex-shrink: 0;
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
     }
-    .icon-btn:active { background: var(--surface2); }
+    .icon-btn:active { background: rgba(255,255,255,0.9); }
 
     /* ── Cards ── */
     .card {
@@ -92,12 +138,14 @@
       border-radius: var(--radius);
       padding: 1.25rem;
       margin: 0 1rem 0.75rem;
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
     }
 
     .section-label {
-      font-size: 10px;
+      font-size: 11px;
       font-weight: 600;
-      letter-spacing: 0.1em;
+      letter-spacing: 0.06em;
       text-transform: uppercase;
       color: var(--text-dim);
       margin-bottom: 0.75rem;
@@ -106,12 +154,12 @@
     /* ── Fields ── */
     .field { margin-bottom: 1rem; }
     .field:last-child { margin-bottom: 0; }
-    .field label { display: block; font-size: 13px; color: var(--text-muted); margin-bottom: 6px; }
+    .field label { display: block; font-size: 13px; color: var(--text-muted); margin-bottom: 6px; font-weight: 500; }
     .field input {
       width: 100%;
-      padding: 11px 14px;
+      padding: 12px 14px;
       font-size: 15px;
-      background: var(--surface2);
+      background: rgba(255,255,255,0.6);
       border: 0.5px solid var(--border);
       border-radius: var(--radius-sm);
       color: var(--text);
@@ -119,30 +167,32 @@
       -webkit-appearance: none;
       transition: border-color 0.15s;
     }
-    .field input:focus { border-color: var(--border-focus); }
+    .field input:focus { border-color: var(--border-focus); background: rgba(255,255,255,0.9); }
     .field input::placeholder { color: var(--text-dim); }
     .field .hint { font-size: 11px; color: var(--text-dim); margin-top: 5px; line-height: 1.5; }
 
     /* ── Buttons ── */
     .btn-primary {
       width: 100%;
-      padding: 13px;
-      background: var(--amber);
+      padding: 14px;
+      background: linear-gradient(135deg, #f0a030, #e07020);
       color: #fff;
       font-size: 15px;
-      font-weight: 600;
+      font-weight: 700;
       border: none;
       border-radius: var(--radius-sm);
       cursor: pointer;
       -webkit-tap-highlight-color: transparent;
-      transition: background 0.15s, transform 0.1s;
+      transition: opacity 0.15s, transform 0.1s;
+      box-shadow: 0 4px 14px rgba(224,112,32,0.35);
+      letter-spacing: 0.01em;
     }
-    .btn-primary:active { background: var(--amber-dark); transform: scale(0.97); }
+    .btn-primary:active { opacity: 0.88; transform: scale(0.97); }
     .btn-primary:disabled { opacity: 0.5; pointer-events: none; }
 
     .btn-ghost {
       width: 100%;
-      padding: 11px;
+      padding: 12px;
       background: transparent;
       color: var(--text-muted);
       font-size: 13px;
@@ -152,39 +202,53 @@
       -webkit-tap-highlight-color: transparent;
       transition: background 0.1s;
     }
-    .btn-ghost:active { background: var(--surface2); }
+    .btn-ghost:active { background: rgba(0,0,0,0.04); }
 
     .btn-danger {
       width: 100%;
-      padding: 11px;
+      padding: 12px;
       background: transparent;
       color: var(--red);
       font-size: 13px;
-      border: 0.5px solid rgba(192,64,64,0.3);
+      border: 0.5px solid rgba(176,48,48,0.25);
       border-radius: var(--radius-sm);
       cursor: pointer;
       -webkit-tap-highlight-color: transparent;
-      transition: background 0.1s;
     }
-    .btn-danger:active { background: rgba(192,64,64,0.08); }
+    .btn-danger:active { background: rgba(176,48,48,0.05); }
 
     /* ── Home screen ── */
-    .home-hero {
-      padding: 1.5rem 1.25rem 1rem;
-    }
-    .home-greeting { font-size: 22px; font-weight: 700; color: var(--text); }
+    .home-hero { padding: 0.5rem 1.25rem 1.25rem; }
+    .home-greeting { font-size: 26px; font-weight: 800; color: var(--text); letter-spacing: -0.5px; }
+    .home-greeting span { color: var(--accent); }
     .home-sub { font-size: 14px; color: var(--text-muted); margin-top: 4px; }
-
     .home-actions { display: flex; flex-direction: column; gap: 10px; padding: 0 1rem 0.75rem; }
+
+    /* ── Hero blob on home ── */
+    .home-blob {
+      margin: 0 1rem 1rem;
+      height: 110px;
+      border-radius: var(--radius);
+      background: linear-gradient(135deg, var(--blob1) 0%, var(--blob2) 40%, var(--blob3) 70%, var(--blob4) 100%);
+      display: flex; align-items: center; justify-content: center;
+      overflow: hidden;
+      position: relative;
+    }
+    .home-blob-inner {
+      width: 64px; height: 64px; border-radius: 50%;
+      background: rgba(255,255,255,0.5);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 32px;
+      backdrop-filter: blur(4px);
+      -webkit-backdrop-filter: blur(4px);
+    }
 
     /* ── Session header ── */
     .session-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 0.75rem 1.25rem 0.5rem;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0.5rem 1.25rem 0.5rem;
     }
-    .session-name { font-size: 15px; font-weight: 600; color: var(--text); }
+    .session-name { font-size: 16px; font-weight: 700; color: var(--text); }
     .session-timer { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
 
     /* ── Stats ── */
@@ -200,25 +264,27 @@
       border-radius: var(--radius-sm);
       padding: 10px 8px;
       text-align: center;
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
     }
-    .stat-val { font-size: 24px; font-weight: 700; color: var(--amber-light); }
-    .stat-lbl { font-size: 10px; color: var(--text-dim); margin-top: 2px; text-transform: uppercase; letter-spacing: 0.05em; }
+    .stat-val { font-size: 24px; font-weight: 800; color: var(--accent); letter-spacing: -0.5px; }
+    .stat-lbl { font-size: 10px; color: var(--text-dim); margin-top: 2px; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; }
 
     /* ── Drink input ── */
     .drink-input {
       width: 100%;
-      padding: 11px 14px;
+      padding: 12px 14px;
       font-size: 15px;
-      background: var(--surface2);
+      background: rgba(255,255,255,0.6);
       border: 0.5px solid var(--border);
       border-radius: var(--radius-sm);
       color: var(--text);
       outline: none;
       -webkit-appearance: none;
       margin-bottom: 1rem;
-      transition: border-color 0.15s;
+      transition: border-color 0.15s, background 0.15s;
     }
-    .drink-input:focus { border-color: var(--border-focus); }
+    .drink-input:focus { border-color: var(--border-focus); background: rgba(255,255,255,0.9); }
     .drink-input::placeholder { color: var(--text-dim); }
 
     /* ── Autocomplete ── */
@@ -228,12 +294,15 @@
       position: absolute;
       top: calc(100% + 4px);
       left: 0; right: 0;
-      background: var(--surface);
+      background: rgba(255,255,255,0.95);
       border: 0.5px solid var(--border-focus);
       border-radius: var(--radius-sm);
       overflow: hidden;
       z-index: 10;
       display: none;
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.1);
     }
     .suggestions.open { display: block; }
     .suggestion-item {
@@ -241,21 +310,22 @@
       font-size: 14px;
       color: var(--text);
       cursor: pointer;
-      border-bottom: 0.5px solid var(--border);
+      border-bottom: 0.5px solid rgba(0,0,0,0.05);
       display: flex; align-items: center; gap: 10px;
       -webkit-tap-highlight-color: transparent;
     }
     .suggestion-item:last-child { border-bottom: none; }
-    .suggestion-item:active { background: var(--surface2); }
+    .suggestion-item:active { background: rgba(224,120,32,0.06); }
     .suggestion-item .sug-icon { font-size: 16px; flex-shrink: 0; }
-    .suggestion-item .sug-match { color: var(--amber-light); font-weight: 600; }
+    .suggestion-item .sug-match { color: var(--accent); font-weight: 700; }
+    .suggestion-item .sug-abv { margin-left: auto; font-size: 11px; color: var(--text-dim); font-weight: 500; }
 
     /* ── Quantity ── */
     .qty-row {
       display: flex;
       align-items: center;
       margin-bottom: 1rem;
-      background: var(--surface2);
+      background: rgba(255,255,255,0.5);
       border: 0.5px solid var(--border);
       border-radius: var(--radius-sm);
       overflow: hidden;
@@ -264,7 +334,7 @@
       width: 72px; height: 64px;
       border: none;
       font-size: 32px;
-      font-weight: 400;
+      font-weight: 300;
       cursor: pointer;
       -webkit-tap-highlight-color: transparent;
       display: flex; align-items: center; justify-content: center;
@@ -273,15 +343,15 @@
       color: #fff;
     }
     .qty-btn:active { filter: brightness(0.85); transform: scale(0.94); }
-    .qty-btn.minus { background: #b03030; }
-    .qty-btn.plus  { background: #3a7d2a; }
-    .qty-center { flex: 1; text-align: center; padding: 8px 0; }
-    .qty-num { font-size: 26px; font-weight: 700; color: var(--text); display: block; line-height: 1; }
-    .qty-word { font-size: 10px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.08em; }
+    .qty-btn.minus { background: #c03838; }
+    .qty-btn.plus  { background: #3a8a28; }
+    .qty-center { flex: 1; text-align: center; padding: 8px 0; background: rgba(255,255,255,0.4); }
+    .qty-num { font-size: 28px; font-weight: 800; color: var(--text); display: block; line-height: 1; letter-spacing: -0.5px; }
+    .qty-word { font-size: 10px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600; }
 
     /* ── Status ── */
     .status { font-size: 12px; text-align: center; min-height: 18px; margin-top: 0.5rem; color: var(--text-dim); }
-    .status.ok { color: var(--green); }
+    .status.ok { color: var(--green); font-weight: 600; }
     .status.err { color: var(--red); }
 
     /* ── Log list ── */
@@ -289,38 +359,31 @@
     .log-empty { font-size: 13px; color: var(--text-dim); text-align: center; padding: 1rem 0; }
     .log-item {
       display: flex; align-items: center; justify-content: space-between;
-      background: var(--surface2);
+      background: rgba(255,255,255,0.5);
+      border: 0.5px solid var(--border);
       border-radius: var(--radius-sm);
       padding: 9px 12px;
     }
-    .log-drink { font-size: 14px; font-weight: 500; color: var(--text); }
+    .log-drink { font-size: 14px; font-weight: 600; color: var(--text); }
     .log-right { display: flex; align-items: center; gap: 8px; }
-    .log-qty { font-size: 14px; font-weight: 600; color: var(--amber); }
+    .log-qty { font-size: 14px; font-weight: 700; color: var(--accent); }
     .log-time { font-size: 11px; color: var(--text-dim); }
 
     /* ── Settings rows ── */
     .settings-row {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
+      display: flex; align-items: center; justify-content: space-between;
       padding: 11px 0;
       border-bottom: 0.5px solid var(--border);
     }
     .settings-row:last-child { border-bottom: none; padding-bottom: 0; }
     .settings-row:first-child { padding-top: 0; }
-    .settings-row-label { font-size: 14px; color: var(--text); }
+    .settings-row-label { font-size: 14px; color: var(--text); font-weight: 500; }
     .settings-row-val { font-size: 13px; color: var(--text-muted); max-width: 55%; text-align: right; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
     .saved-badge {
-      display: inline-block;
-      font-size: 11px;
-      color: var(--green);
-      background: rgba(90,158,58,0.12);
-      border-radius: 5px;
-      padding: 2px 8px;
-      margin-top: 6px;
-      opacity: 0;
-      transition: opacity 0.3s;
+      display: inline-block; font-size: 11px; color: var(--green);
+      background: rgba(58,125,42,0.1); border-radius: 5px;
+      padding: 2px 8px; margin-top: 6px; opacity: 0; transition: opacity 0.3s;
     }
     .saved-badge.show { opacity: 1; }
 
@@ -336,6 +399,8 @@
      SCREEN: First-time Setup
 ════════════════════════════════════════ -->
 <div id="screen-firstrun" class="screen active">
+  <div class="blob-bg"><div class="blob-extra"></div></div>
+  <div class="screen-content">
   <div class="topbar">
     <div class="topbar-left">
       <div class="app-icon">🍺</div>
@@ -356,12 +421,15 @@
     </div>
     <button class="btn-primary" onclick="saveFirstRun()">Save & get started</button>
   </div>
+  </div>
 </div>
 
 <!-- ══════════════════════════════════════
      SCREEN: Home
 ════════════════════════════════════════ -->
 <div id="screen-home" class="screen">
+  <div class="blob-bg"><div class="blob-extra"></div></div>
+  <div class="screen-content">
   <div class="topbar">
     <div class="topbar-left">
       <div class="app-icon">🍺</div>
@@ -370,6 +438,7 @@
     <button class="icon-btn" onclick="show('screen-settings')" aria-label="Settings">⚙️</button>
   </div>
 
+  <div class="home-blob"><div class="home-blob-inner">🍺</div></div>
   <div class="home-hero">
     <div class="home-greeting" id="home-greeting">Hey!</div>
     <div class="home-sub">Ready to track tonight's drinks?</div>
@@ -390,12 +459,15 @@
       <span class="settings-row-val" id="home-webhook-status" style="color: var(--green);">Connected</span>
     </div>
   </div>
+  </div>
 </div>
 
 <!-- ══════════════════════════════════════
      SCREEN: Tracker
 ════════════════════════════════════════ -->
 <div id="screen-tracker" class="screen">
+  <div class="blob-bg"><div class="blob-extra"></div></div>
+  <div class="screen-content">
   <div class="topbar">
     <div class="topbar-left">
       <div>
@@ -447,12 +519,15 @@
     <div class="divider"></div>
     <button class="btn-ghost" onclick="endSession()">End session & post summary</button>
   </div>
+  </div>
 </div>
 
 <!-- ══════════════════════════════════════
      SCREEN: Settings
 ════════════════════════════════════════ -->
 <div id="screen-settings" class="screen">
+  <div class="blob-bg"><div class="blob-extra"></div></div>
+  <div class="screen-content">
   <div class="topbar">
     <div class="topbar-left">
       <button class="icon-btn" onclick="show('screen-home')" aria-label="Back">←</button>
@@ -486,6 +561,7 @@
     <div class="section-label">Danger zone</div>
     <button class="btn-danger" onclick="clearAllData()">Clear all saved data</button>
   </div>
+  </div>
 </div>
 
 <script>
@@ -516,7 +592,7 @@
   function applySettings(name, webhook) {
     sessionName = name;
     webhookUrl = webhook;
-    document.getElementById('home-greeting').textContent = `Hey, ${name}!`;
+    document.getElementById('home-greeting').innerHTML = `Hey, <span>${name}!</span>`;
     const preview = webhook ? '…' + webhook.slice(-20) : '—';
     document.getElementById('home-webhook-preview').textContent = preview;
     document.getElementById('s-name').value = name;
