@@ -604,12 +604,14 @@
     btn.textContent = 'Posting…';
     btn.disabled = true;
     totalDrinks += qty;
-    const entry = { type, qty, time: new Date() };
+    const abv = getAbv(type);
+    const entry = { type, qty, abv, time: new Date() };
     log.push(entry);
     updateStats();
     addLogItem(entry);
     const drinkLabel = qty === 1 ? `1 ${type}` : `${qty}× ${type}`;
-    const msg = `🍺 **${sessionName}** just had **${drinkLabel}**\n📊 Session total: **${totalDrinks} drink${totalDrinks !== 1 ? 's' : ''}** — ${buildSummary()}`;
+    const abvTag = abv !== null ? ` *(${abv}% ABV)*` : '';
+    const msg = `🍺 **${sessionName}** just had **${drinkLabel}**${abvTag}\n📊 Session total: **${totalDrinks} drink${totalDrinks !== 1 ? 's' : ''}** — ${buildSummary()}`;
     await postToDiscord(msg);
     document.getElementById('drink-type').value = '';
     qty = 1;
@@ -632,8 +634,15 @@
 
   function buildSummary() {
     const counts = {};
-    log.forEach(e => { counts[e.type] = (counts[e.type] || 0) + e.qty; });
-    return Object.entries(counts).map(([t, n]) => `${n}× ${t}`).join(', ');
+    const abvMap = {};
+    log.forEach(e => {
+      counts[e.type] = (counts[e.type] || 0) + e.qty;
+      if (e.abv !== null && e.abv !== undefined) abvMap[e.type] = e.abv;
+    });
+    return Object.entries(counts).map(([t, n]) => {
+      const abvStr = abvMap[t] !== undefined ? ` (${abvMap[t]}% ABV)` : '';
+      return `${n}× ${t}${abvStr}`;
+    }).join(', ');
   }
 
   function updateStats() {
@@ -676,29 +685,141 @@
 
   // ── Drink suggestions ──
   const DRINKS = [
-    { name: 'Beer', icon: '🍺' }, { name: 'Lager', icon: '🍺' }, { name: 'IPA', icon: '🍺' },
-    { name: 'Pale Ale', icon: '🍺' }, { name: 'Stout', icon: '🍺' }, { name: 'Porter', icon: '🍺' },
-    { name: 'Sour Beer', icon: '🍺' }, { name: 'Wheat Beer', icon: '🍺' }, { name: 'Pilsner', icon: '🍺' },
-    { name: 'Cider', icon: '🍎' }, { name: 'Hard Cider', icon: '🍎' },
-    { name: 'Wine', icon: '🍷' }, { name: 'Red Wine', icon: '🍷' }, { name: 'White Wine', icon: '🍷' },
-    { name: 'Rosé', icon: '🍷' }, { name: 'Prosecco', icon: '🥂' }, { name: 'Champagne', icon: '🥂' },
-    { name: 'Mimosa', icon: '🥂' }, { name: 'Sangria', icon: '🍷' },
-    { name: 'Vodka Soda', icon: '🥃' }, { name: 'Vodka Cranberry', icon: '🥃' },
-    { name: 'Gin & Tonic', icon: '🥃' }, { name: 'Rum & Coke', icon: '🥃' },
-    { name: 'Whiskey', icon: '🥃' }, { name: 'Whiskey Sour', icon: '🥃' },
-    { name: 'Bourbon', icon: '🥃' }, { name: 'Scotch', icon: '🥃' },
-    { name: 'Tequila', icon: '🥃' }, { name: 'Tequila Shot', icon: '🥃' },
-    { name: 'Margarita', icon: '🍹' }, { name: 'Mojito', icon: '🍹' },
-    { name: 'Daiquiri', icon: '🍹' }, { name: 'Piña Colada', icon: '🍹' },
-    { name: 'Long Island Iced Tea', icon: '🍹' }, { name: 'Cosmopolitan', icon: '🍸' },
-    { name: 'Martini', icon: '🍸' }, { name: 'Negroni', icon: '🍸' },
-    { name: 'Old Fashioned', icon: '🥃' }, { name: 'Manhattan', icon: '🥃' },
-    { name: 'Hard Seltzer', icon: '💧' }, { name: 'White Claw', icon: '💧' },
-    { name: 'Espresso Martini', icon: '☕' }, { name: 'Irish Coffee', icon: '☕' },
-    { name: 'Shot', icon: '🥃' }, { name: 'Jägerbomb', icon: '🥃' },
+    // ── Beers: generic styles ──
+    { name: 'Beer', icon: '🍺', abv: 5.0 }, { name: 'Lager', icon: '🍺', abv: 4.5 }, { name: 'IPA', icon: '🍺', abv: 6.5 },
+    { name: 'Pale Ale', icon: '🍺', abv: 5.0 }, { name: 'Stout', icon: '🍺', abv: 5.5 }, { name: 'Porter', icon: '🍺', abv: 5.5 },
+    { name: 'Sour Beer', icon: '🍺', abv: 4.5 }, { name: 'Wheat Beer', icon: '🍺', abv: 5.0 }, { name: 'Pilsner', icon: '🍺', abv: 4.8 },
+    { name: 'Session IPA', icon: '🍺', abv: 4.5 }, { name: 'Double IPA', icon: '🍺', abv: 8.5 }, { name: 'Hazy IPA', icon: '🍺', abv: 6.5 },
+    { name: 'Amber Ale', icon: '🍺', abv: 5.2 }, { name: 'Brown Ale', icon: '🍺', abv: 5.0 }, { name: 'Hefeweizen', icon: '🍺', abv: 5.0 },
+    // ── Beers: brands ──
+    { name: 'Budweiser', icon: '🍺', abv: 5.0 }, { name: 'Bud Light', icon: '🍺', abv: 4.2 }, { name: 'Bud Light Lime', icon: '🍺', abv: 4.2 },
+    { name: 'Coors Light', icon: '🍺', abv: 4.2 }, { name: 'Coors Banquet', icon: '🍺', abv: 5.0 },
+    { name: 'Miller Lite', icon: '🍺', abv: 4.2 }, { name: 'Miller High Life', icon: '🍺', abv: 4.6 },
+    { name: 'Michelob Ultra', icon: '🍺', abv: 4.2 }, { name: 'Natural Light', icon: '🍺', abv: 4.2 },
+    { name: 'Corona', icon: '🍺', abv: 4.6 }, { name: 'Corona Light', icon: '🍺', abv: 4.1 }, { name: 'Corona Extra', icon: '🍺', abv: 4.6 },
+    { name: 'Modelo', icon: '🍺', abv: 4.4 }, { name: 'Modelo Especial', icon: '🍺', abv: 4.4 }, { name: 'Modelo Negra', icon: '🍺', abv: 5.4 },
+    { name: 'Heineken', icon: '🍺', abv: 5.0 }, { name: 'Heineken 0.0', icon: '🍺', abv: 0.0 },
+    { name: 'Stella Artois', icon: '🍺', abv: 5.0 }, { name: 'Guinness', icon: '🍺', abv: 4.2 },
+    { name: 'Blue Moon', icon: '🍺', abv: 5.4 }, { name: 'Blue Moon Light Sky', icon: '🍺', abv: 4.0 },
+    { name: 'Shock Top', icon: '🍺', abv: 5.2 }, { name: 'Sam Adams', icon: '🍺', abv: 5.0 },
+    { name: 'Sam Adams Boston Lager', icon: '🍺', abv: 5.0 }, { name: 'Sam Adams Seasonal', icon: '🍺', abv: 5.3 },
+    { name: 'Dogfish Head 60 Minute', icon: '🍺', abv: 6.0 }, { name: 'Dogfish Head 90 Minute', icon: '🍺', abv: 9.0 },
+    { name: 'Sierra Nevada Pale Ale', icon: '🍺', abv: 5.6 }, { name: 'Sierra Nevada Torpedo', icon: '🍺', abv: 7.2 },
+    { name: 'New Belgium Fat Tire', icon: '🍺', abv: 5.2 }, { name: 'Lagunitas IPA', icon: '🍺', abv: 6.2 },
+    { name: 'Stone IPA', icon: '🍺', abv: 6.9 }, { name: 'Goose Island IPA', icon: '🍺', abv: 5.9 },
+    { name: 'Founders All Day IPA', icon: '🍺', abv: 4.7 }, { name: "Bell's Two Hearted", icon: '🍺', abv: 7.0 },
+    { name: 'Allagash White', icon: '🍺', abv: 5.1 }, { name: 'Sweetwater 420', icon: '🍺', abv: 5.7 },
+    { name: 'Yuengling', icon: '🍺', abv: 4.4 }, { name: 'Pabst Blue Ribbon', icon: '🍺', abv: 4.7 },
+    { name: 'Rolling Rock', icon: '🍺', abv: 4.5 }, { name: 'Keystone Light', icon: '🍺', abv: 4.1 },
+    { name: 'Dos Equis', icon: '🍺', abv: 4.2 }, { name: 'Tecate', icon: '🍺', abv: 4.5 }, { name: 'Pacifico', icon: '🍺', abv: 4.4 },
+    { name: 'Presidente', icon: '🍺', abv: 5.0 }, { name: 'Peroni', icon: '🍺', abv: 5.1 }, { name: 'Moretti', icon: '🍺', abv: 4.6 },
+    { name: 'Amstel Light', icon: '🍺', abv: 3.5 }, { name: "Beck's", icon: '🍺', abv: 5.0 }, { name: 'Fosters', icon: '🍺', abv: 5.0 },
+    { name: 'Kingfisher', icon: '🍺', abv: 4.8 }, { name: 'Sapporo', icon: '🍺', abv: 4.9 }, { name: 'Asahi', icon: '🍺', abv: 5.0 },
+    { name: 'Kirin', icon: '🍺', abv: 5.0 }, { name: 'Tiger Beer', icon: '🍺', abv: 5.0 }, { name: 'Tsingtao', icon: '🍺', abv: 4.7 },
+    { name: 'Carlsberg', icon: '🍺', abv: 5.0 }, { name: "Tennent's", icon: '🍺', abv: 4.0 },
+    // ── Ciders ──
+    { name: 'Cider', icon: '🍎', abv: 5.0 }, { name: 'Hard Cider', icon: '🍎', abv: 5.0 },
+    { name: 'Angry Orchard', icon: '🍎', abv: 5.0 }, { name: 'Angry Orchard Crisp Apple', icon: '🍎', abv: 5.0 },
+    { name: 'Strongbow', icon: '🍎', abv: 5.0 }, { name: 'Magners', icon: '🍎', abv: 4.5 },
+    { name: 'Woodchuck Cider', icon: '🍎', abv: 5.0 }, { name: 'Ace Cider', icon: '🍎', abv: 5.0 },
+    // ── Hard Seltzers ──
+    { name: 'Hard Seltzer', icon: '💧', abv: 5.0 },
+    { name: 'White Claw', icon: '💧', abv: 5.0 }, { name: 'White Claw Black Cherry', icon: '💧', abv: 5.0 },
+    { name: 'White Claw Mango', icon: '💧', abv: 5.0 }, { name: 'White Claw Lime', icon: '💧', abv: 5.0 },
+    { name: 'White Claw Raspberry', icon: '💧', abv: 5.0 },
+    { name: 'Truly Hard Seltzer', icon: '💧', abv: 5.0 }, { name: 'Truly Wild Berry', icon: '💧', abv: 5.0 },
+    { name: 'Truly Lemonade', icon: '💧', abv: 5.0 },
+    { name: 'Bud Light Seltzer', icon: '💧', abv: 5.0 }, { name: 'Corona Hard Seltzer', icon: '💧', abv: 4.5 },
+    { name: 'High Noon', icon: '💧', abv: 4.5 }, { name: 'High Noon Peach', icon: '💧', abv: 4.5 },
+    { name: 'Vizzy Hard Seltzer', icon: '💧', abv: 5.0 }, { name: 'Bon & Viv Spiked Seltzer', icon: '💧', abv: 4.5 },
+    // ── Wine: generic ──
+    { name: 'Wine', icon: '🍷', abv: 13.0 }, { name: 'Red Wine', icon: '🍷', abv: 13.5 }, { name: 'White Wine', icon: '🍷', abv: 12.5 },
+    { name: 'Rosé', icon: '🍷', abv: 12.0 }, { name: 'Sangria', icon: '🍷', abv: 10.0 },
+    { name: 'Cabernet Sauvignon', icon: '🍷', abv: 13.5 }, { name: 'Merlot', icon: '🍷', abv: 13.5 },
+    { name: 'Pinot Noir', icon: '🍷', abv: 13.0 }, { name: 'Shiraz', icon: '🍷', abv: 14.5 }, { name: 'Malbec', icon: '🍷', abv: 14.0 },
+    { name: 'Chardonnay', icon: '🍷', abv: 13.5 }, { name: 'Sauvignon Blanc', icon: '🍷', abv: 12.5 },
+    { name: 'Pinot Grigio', icon: '🍷', abv: 12.0 }, { name: 'Riesling', icon: '🍷', abv: 10.0 },
+    { name: 'Moscato', icon: '🍷', abv: 7.5 }, { name: 'Zinfandel', icon: '🍷', abv: 14.5 },
+    // ── Wine: brands ──
+    { name: 'Kim Crawford', icon: '🍷', abv: 12.5 }, { name: 'Meiomi Pinot Noir', icon: '🍷', abv: 13.5 },
+    { name: 'Whispering Angel Rosé', icon: '🍷', abv: 13.0 }, { name: 'Josh Cellars', icon: '🍷', abv: 13.5 },
+    { name: 'Apothic Red', icon: '🍷', abv: 13.5 }, { name: 'Barefoot Wine', icon: '🍷', abv: 13.0 },
+    { name: 'La Marca Prosecco', icon: '🥂', abv: 11.0 }, { name: 'Veuve Clicquot', icon: '🥂', abv: 12.0 },
+    // ── Bubbly ──
+    { name: 'Prosecco', icon: '🥂', abv: 11.0 }, { name: 'Champagne', icon: '🥂', abv: 12.0 },
+    { name: 'Mimosa', icon: '🥂', abv: 6.0 }, { name: 'Bellini', icon: '🥂', abv: 5.5 }, { name: 'Aperol Spritz', icon: '🥂', abv: 8.0 },
+    // ── Spirits: vodka ──
+    { name: 'Vodka Soda', icon: '🥃', abv: 13.0 }, { name: 'Vodka Cranberry', icon: '🥃', abv: 13.0 },
+    { name: 'Vodka Tonic', icon: '🥃', abv: 13.0 }, { name: 'Vodka Red Bull', icon: '🥃', abv: 10.0 },
+    { name: 'Vodka Shot', icon: '🥃', abv: 40.0 },
+    { name: 'Grey Goose', icon: '🥃', abv: 40.0 }, { name: "Tito's", icon: '🥃', abv: 40.0 },
+    { name: 'Absolut', icon: '🥃', abv: 40.0 }, { name: 'Ketel One', icon: '🥃', abv: 40.0 },
+    { name: 'Belvedere', icon: '🥃', abv: 40.0 }, { name: 'Smirnoff', icon: '🥃', abv: 40.0 },
+    { name: 'Stolichnaya', icon: '🥃', abv: 40.0 }, { name: 'Ciroc', icon: '🥃', abv: 40.0 },
+    // ── Spirits: whiskey ──
+    { name: 'Whiskey', icon: '🥃', abv: 40.0 }, { name: 'Whiskey Sour', icon: '🥃', abv: 15.0 },
+    { name: 'Bourbon', icon: '🥃', abv: 40.0 }, { name: 'Scotch', icon: '🥃', abv: 40.0 }, { name: 'Irish Whiskey', icon: '🥃', abv: 40.0 },
+    { name: "Jack Daniel's", icon: '🥃', abv: 40.0 }, { name: 'Jack & Coke', icon: '🥃', abv: 10.0 },
+    { name: 'Jim Beam', icon: '🥃', abv: 40.0 }, { name: "Maker's Mark", icon: '🥃', abv: 45.0 },
+    { name: 'Woodford Reserve', icon: '🥃', abv: 45.2 }, { name: 'Buffalo Trace', icon: '🥃', abv: 45.0 },
+    { name: 'Bulleit Bourbon', icon: '🥃', abv: 45.0 }, { name: 'Knob Creek', icon: '🥃', abv: 50.0 },
+    { name: 'Wild Turkey', icon: '🥃', abv: 50.5 }, { name: 'Evan Williams', icon: '🥃', abv: 43.0 },
+    { name: 'Jameson', icon: '🥃', abv: 40.0 }, { name: 'Jameson & Ginger', icon: '🥃', abv: 10.0 },
+    { name: 'Bushmills', icon: '🥃', abv: 40.0 }, { name: 'Tullamore Dew', icon: '🥃', abv: 40.0 },
+    { name: 'Johnnie Walker', icon: '🥃', abv: 40.0 }, { name: 'Johnnie Walker Black', icon: '🥃', abv: 40.0 },
+    { name: 'Johnnie Walker Red', icon: '🥃', abv: 40.0 }, { name: 'Glenfiddich', icon: '🥃', abv: 40.0 },
+    { name: 'Macallan', icon: '🥃', abv: 43.0 }, { name: 'Lagavulin', icon: '🥃', abv: 43.0 },
+    { name: 'Laphroaig', icon: '🥃', abv: 43.0 }, { name: 'Glenlivet', icon: '🥃', abv: 40.0 },
+    // ── Spirits: gin ──
+    { name: 'Gin & Tonic', icon: '🥃', abv: 12.0 }, { name: 'Gin Martini', icon: '🍸', abv: 25.0 },
+    { name: 'Tanqueray', icon: '🥃', abv: 43.1 }, { name: "Hendrick's", icon: '🥃', abv: 41.4 },
+    { name: 'Bombay Sapphire', icon: '🥃', abv: 40.0 }, { name: 'Beefeater', icon: '🥃', abv: 40.0 },
+    { name: 'The Botanist', icon: '🥃', abv: 46.0 }, { name: 'Aviation Gin', icon: '🥃', abv: 42.0 },
+    // ── Spirits: rum ──
+    { name: 'Rum & Coke', icon: '🥃', abv: 10.0 }, { name: 'Rum Shot', icon: '🥃', abv: 40.0 },
+    { name: 'Captain Morgan', icon: '🥃', abv: 35.0 }, { name: 'Bacardi', icon: '🥃', abv: 40.0 },
+    { name: 'Malibu', icon: '🥃', abv: 21.0 }, { name: 'Malibu & Coke', icon: '🥃', abv: 8.0 },
+    { name: 'Kraken Rum', icon: '🥃', abv: 47.0 }, { name: 'Mount Gay', icon: '🥃', abv: 40.0 },
+    { name: 'Havana Club', icon: '🥃', abv: 40.0 }, { name: 'Diplomatico', icon: '🥃', abv: 40.0 },
+    // ── Spirits: tequila ──
+    { name: 'Tequila', icon: '🥃', abv: 40.0 }, { name: 'Tequila Shot', icon: '🥃', abv: 40.0 }, { name: 'Tequila Soda', icon: '🥃', abv: 12.0 },
+    { name: 'Jose Cuervo', icon: '🥃', abv: 38.0 }, { name: 'Patron', icon: '🥃', abv: 40.0 },
+    { name: 'Don Julio', icon: '🥃', abv: 40.0 }, { name: 'Don Julio 1942', icon: '🥃', abv: 38.0 },
+    { name: 'Casamigos', icon: '🥃', abv: 40.0 }, { name: 'Espolon', icon: '🥃', abv: 40.0 },
+    { name: 'Hornitos', icon: '🥃', abv: 40.0 }, { name: '1800 Tequila', icon: '🥃', abv: 40.0 },
+    { name: 'Clase Azul', icon: '🥃', abv: 40.0 },
+    // ── Spirits: other ──
+    { name: 'Fireball', icon: '🥃', abv: 33.0 }, { name: 'Fireball Shot', icon: '🥃', abv: 33.0 },
+    { name: 'Jägermeister', icon: '🥃', abv: 35.0 }, { name: 'Jägerbomb', icon: '🥃', abv: 7.0 },
+    { name: 'Baileys', icon: '🥃', abv: 17.0 }, { name: 'Kahlúa', icon: '🥃', abv: 20.0 },
+    { name: 'Amaretto', icon: '🥃', abv: 24.0 }, { name: 'Disaronno', icon: '🥃', abv: 28.0 },
+    { name: 'Aperol', icon: '🥃', abv: 11.0 }, { name: 'Campari', icon: '🥃', abv: 25.0 },
+    { name: 'Chambord', icon: '🥃', abv: 16.5 }, { name: 'Triple Sec', icon: '🥃', abv: 30.0 },
+    { name: 'Blue Curacao', icon: '🥃', abv: 25.0 }, { name: 'Midori', icon: '🥃', abv: 20.0 },
+    { name: 'Peach Schnapps', icon: '🥃', abv: 20.0 }, { name: 'Rumple Minze', icon: '🥃', abv: 50.0 },
+    // ── Cocktails ──
+    { name: 'Margarita', icon: '🍹', abv: 15.0 }, { name: 'Frozen Margarita', icon: '🍹', abv: 12.0 },
+    { name: 'Mojito', icon: '🍹', abv: 12.0 }, { name: 'Daiquiri', icon: '🍹', abv: 20.0 },
+    { name: 'Piña Colada', icon: '🍹', abv: 13.0 }, { name: 'Long Island Iced Tea', icon: '🍹', abv: 22.0 },
+    { name: 'Sex on the Beach', icon: '🍹', abv: 10.0 }, { name: 'Tequila Sunrise', icon: '🍹', abv: 10.0 },
+    { name: 'Paloma', icon: '🍹', abv: 12.0 }, { name: 'Dark & Stormy', icon: '🍹', abv: 14.0 },
+    { name: 'Moscow Mule', icon: '🍹', abv: 10.0 }, { name: 'Kentucky Mule', icon: '🍹', abv: 10.0 },
+    { name: 'Cosmopolitan', icon: '🍸', abv: 20.0 }, { name: 'Martini', icon: '🍸', abv: 25.0 },
+    { name: 'Negroni', icon: '🍸', abv: 24.0 }, { name: 'Old Fashioned', icon: '🥃', abv: 32.0 },
+    { name: 'Manhattan', icon: '🥃', abv: 30.0 }, { name: 'Boulevardier', icon: '🥃', abv: 28.0 },
+    { name: 'Espresso Martini', icon: '☕', abv: 18.0 }, { name: 'Irish Coffee', icon: '☕', abv: 12.0 },
+    { name: 'White Russian', icon: '🥃', abv: 18.0 }, { name: 'Black Russian', icon: '🥃', abv: 25.0 },
+    { name: 'Aperol Spritz', icon: '🥂', abv: 8.0 }, { name: 'Hugo Spritz', icon: '🥂', abv: 7.0 },
+    // ── Generic ──
+    { name: 'Shot', icon: '🥃', abv: 40.0 }, { name: 'Bomb Shot', icon: '🥃', abv: 7.0 },
   ];
 
   let recentDrinks = JSON.parse(localStorage.getItem('dt-recent') || '[]');
+
+  function getAbv(drinkName) {
+    const match = DRINKS.find(d => d.name.toLowerCase() === drinkName.toLowerCase());
+    return match ? match.abv : null;
+  }
 
   function getSuggestions(query) {
     const q = query.toLowerCase().trim();
