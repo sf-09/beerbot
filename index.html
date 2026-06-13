@@ -1,0 +1,773 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Drink Tracker</title>
+
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#BA7517" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Drinks" />
+
+  <link rel="apple-touch-icon" href="icons/icon-180x180.png" />
+  <link rel="apple-touch-icon" sizes="152x152" href="icons/icon-152x152.png" />
+  <link rel="apple-touch-icon" sizes="167x167" href="icons/icon-167x167.png" />
+  <link rel="apple-touch-icon" sizes="180x180" href="icons/icon-180x180.png" />
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --amber: #BA7517;
+      --amber-dark: #854F0B;
+      --amber-light: #EF9F27;
+      --bg: #0f0a02;
+      --surface: #1c1206;
+      --surface2: #261a08;
+      --border: rgba(186,117,23,0.18);
+      --border-focus: rgba(186,117,23,0.6);
+      --text: #f5e6cc;
+      --text-muted: #a08050;
+      --text-dim: #5c4020;
+      --green: #5a9e3a;
+      --red: #c04040;
+      --radius: 14px;
+      --radius-sm: 9px;
+    }
+
+    html, body {
+      height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      -webkit-font-smoothing: antialiased;
+      overscroll-behavior: none;
+    }
+    body {
+      padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+    }
+
+    .screen { display: none; flex-direction: column; min-height: 100dvh; padding-bottom: 2rem; }
+    .screen.active { display: flex; }
+
+    /* ── Top bar ── */
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1.25rem 1.25rem 0.75rem;
+    }
+    .topbar-left { display: flex; align-items: center; gap: 10px; }
+    .app-icon {
+      width: 34px; height: 34px;
+      background: var(--amber);
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px;
+      flex-shrink: 0;
+    }
+    .app-title { font-size: 17px; font-weight: 600; color: var(--text); }
+
+    .icon-btn {
+      width: 34px; height: 34px;
+      background: var(--surface);
+      border: 0.5px solid var(--border);
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+      color: var(--text-muted);
+      font-size: 17px;
+      flex-shrink: 0;
+    }
+    .icon-btn:active { background: var(--surface2); }
+
+    /* ── Cards ── */
+    .card {
+      background: var(--surface);
+      border: 0.5px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.25rem;
+      margin: 0 1rem 0.75rem;
+    }
+
+    .section-label {
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      margin-bottom: 0.75rem;
+    }
+
+    /* ── Fields ── */
+    .field { margin-bottom: 1rem; }
+    .field:last-child { margin-bottom: 0; }
+    .field label { display: block; font-size: 13px; color: var(--text-muted); margin-bottom: 6px; }
+    .field input {
+      width: 100%;
+      padding: 11px 14px;
+      font-size: 15px;
+      background: var(--surface2);
+      border: 0.5px solid var(--border);
+      border-radius: var(--radius-sm);
+      color: var(--text);
+      outline: none;
+      -webkit-appearance: none;
+      transition: border-color 0.15s;
+    }
+    .field input:focus { border-color: var(--border-focus); }
+    .field input::placeholder { color: var(--text-dim); }
+    .field .hint { font-size: 11px; color: var(--text-dim); margin-top: 5px; line-height: 1.5; }
+
+    /* ── Buttons ── */
+    .btn-primary {
+      width: 100%;
+      padding: 13px;
+      background: var(--amber);
+      color: #fff;
+      font-size: 15px;
+      font-weight: 600;
+      border: none;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+      transition: background 0.15s, transform 0.1s;
+    }
+    .btn-primary:active { background: var(--amber-dark); transform: scale(0.97); }
+    .btn-primary:disabled { opacity: 0.5; pointer-events: none; }
+
+    .btn-ghost {
+      width: 100%;
+      padding: 11px;
+      background: transparent;
+      color: var(--text-muted);
+      font-size: 13px;
+      border: 0.5px solid var(--border);
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+      transition: background 0.1s;
+    }
+    .btn-ghost:active { background: var(--surface2); }
+
+    .btn-danger {
+      width: 100%;
+      padding: 11px;
+      background: transparent;
+      color: var(--red);
+      font-size: 13px;
+      border: 0.5px solid rgba(192,64,64,0.3);
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+      transition: background 0.1s;
+    }
+    .btn-danger:active { background: rgba(192,64,64,0.08); }
+
+    /* ── Home screen ── */
+    .home-hero {
+      padding: 1.5rem 1.25rem 1rem;
+    }
+    .home-greeting { font-size: 22px; font-weight: 700; color: var(--text); }
+    .home-sub { font-size: 14px; color: var(--text-muted); margin-top: 4px; }
+
+    .home-actions { display: flex; flex-direction: column; gap: 10px; padding: 0 1rem 0.75rem; }
+
+    /* ── Session header ── */
+    .session-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.75rem 1.25rem 0.5rem;
+    }
+    .session-name { font-size: 15px; font-weight: 600; color: var(--text); }
+    .session-timer { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+
+    /* ── Stats ── */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin: 0 1rem 0.75rem;
+    }
+    .stat {
+      background: var(--surface);
+      border: 0.5px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 10px 8px;
+      text-align: center;
+    }
+    .stat-val { font-size: 24px; font-weight: 700; color: var(--amber-light); }
+    .stat-lbl { font-size: 10px; color: var(--text-dim); margin-top: 2px; text-transform: uppercase; letter-spacing: 0.05em; }
+
+    /* ── Drink input ── */
+    .drink-input {
+      width: 100%;
+      padding: 11px 14px;
+      font-size: 15px;
+      background: var(--surface2);
+      border: 0.5px solid var(--border);
+      border-radius: var(--radius-sm);
+      color: var(--text);
+      outline: none;
+      -webkit-appearance: none;
+      margin-bottom: 1rem;
+      transition: border-color 0.15s;
+    }
+    .drink-input:focus { border-color: var(--border-focus); }
+    .drink-input::placeholder { color: var(--text-dim); }
+
+    /* ── Autocomplete ── */
+    .autocomplete-wrap { position: relative; margin-bottom: 1rem; }
+    .autocomplete-wrap .drink-input { margin-bottom: 0; }
+    .suggestions {
+      position: absolute;
+      top: calc(100% + 4px);
+      left: 0; right: 0;
+      background: var(--surface);
+      border: 0.5px solid var(--border-focus);
+      border-radius: var(--radius-sm);
+      overflow: hidden;
+      z-index: 10;
+      display: none;
+    }
+    .suggestions.open { display: block; }
+    .suggestion-item {
+      padding: 11px 14px;
+      font-size: 14px;
+      color: var(--text);
+      cursor: pointer;
+      border-bottom: 0.5px solid var(--border);
+      display: flex; align-items: center; gap: 10px;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .suggestion-item:last-child { border-bottom: none; }
+    .suggestion-item:active { background: var(--surface2); }
+    .suggestion-item .sug-icon { font-size: 16px; flex-shrink: 0; }
+    .suggestion-item .sug-match { color: var(--amber-light); font-weight: 600; }
+
+    /* ── Quantity ── */
+    .qty-row {
+      display: flex;
+      align-items: center;
+      margin-bottom: 1rem;
+      background: var(--surface2);
+      border: 0.5px solid var(--border);
+      border-radius: var(--radius-sm);
+      overflow: hidden;
+    }
+    .qty-btn {
+      width: 72px; height: 64px;
+      border: none;
+      font-size: 32px;
+      font-weight: 400;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+      transition: filter 0.1s, transform 0.1s;
+      color: #fff;
+    }
+    .qty-btn:active { filter: brightness(0.85); transform: scale(0.94); }
+    .qty-btn.minus { background: #b03030; }
+    .qty-btn.plus  { background: #3a7d2a; }
+    .qty-center { flex: 1; text-align: center; padding: 8px 0; }
+    .qty-num { font-size: 26px; font-weight: 700; color: var(--text); display: block; line-height: 1; }
+    .qty-word { font-size: 10px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.08em; }
+
+    /* ── Status ── */
+    .status { font-size: 12px; text-align: center; min-height: 18px; margin-top: 0.5rem; color: var(--text-dim); }
+    .status.ok { color: var(--green); }
+    .status.err { color: var(--red); }
+
+    /* ── Log list ── */
+    .log-list { display: flex; flex-direction: column; gap: 6px; max-height: 220px; overflow-y: auto; }
+    .log-empty { font-size: 13px; color: var(--text-dim); text-align: center; padding: 1rem 0; }
+    .log-item {
+      display: flex; align-items: center; justify-content: space-between;
+      background: var(--surface2);
+      border-radius: var(--radius-sm);
+      padding: 9px 12px;
+    }
+    .log-drink { font-size: 14px; font-weight: 500; color: var(--text); }
+    .log-right { display: flex; align-items: center; gap: 8px; }
+    .log-qty { font-size: 14px; font-weight: 600; color: var(--amber); }
+    .log-time { font-size: 11px; color: var(--text-dim); }
+
+    /* ── Settings rows ── */
+    .settings-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 11px 0;
+      border-bottom: 0.5px solid var(--border);
+    }
+    .settings-row:last-child { border-bottom: none; padding-bottom: 0; }
+    .settings-row:first-child { padding-top: 0; }
+    .settings-row-label { font-size: 14px; color: var(--text); }
+    .settings-row-val { font-size: 13px; color: var(--text-muted); max-width: 55%; text-align: right; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+    .saved-badge {
+      display: inline-block;
+      font-size: 11px;
+      color: var(--green);
+      background: rgba(90,158,58,0.12);
+      border-radius: 5px;
+      padding: 2px 8px;
+      margin-top: 6px;
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+    .saved-badge.show { opacity: 1; }
+
+    .divider { border: none; border-top: 0.5px solid var(--border); margin: 1rem 0; }
+
+    .pop { animation: pop 0.2s ease; }
+    @keyframes pop { 0%{transform:scale(1)} 50%{transform:scale(1.2)} 100%{transform:scale(1)} }
+  </style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════
+     SCREEN: First-time Setup
+════════════════════════════════════════ -->
+<div id="screen-firstrun" class="screen active">
+  <div class="topbar">
+    <div class="topbar-left">
+      <div class="app-icon">🍺</div>
+      <span class="app-title">Drink Tracker</span>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="section-label">Welcome — set up once</div>
+    <div class="field">
+      <label for="fr-name">Your name</label>
+      <input id="fr-name" type="text" placeholder="e.g. Alex" autocomplete="off" autocorrect="off" />
+    </div>
+    <div class="field">
+      <label for="fr-webhook">Discord webhook URL</label>
+      <input id="fr-webhook" type="url" placeholder="https://discord.com/api/webhooks/..." autocomplete="off" autocorrect="off" autocapitalize="none" />
+      <div class="hint">In Discord: channel settings → Integrations → Webhooks → New Webhook → Copy URL</div>
+    </div>
+    <button class="btn-primary" onclick="saveFirstRun()">Save & get started</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     SCREEN: Home
+════════════════════════════════════════ -->
+<div id="screen-home" class="screen">
+  <div class="topbar">
+    <div class="topbar-left">
+      <div class="app-icon">🍺</div>
+      <span class="app-title">Drink Tracker</span>
+    </div>
+    <button class="icon-btn" onclick="show('screen-settings')" aria-label="Settings">⚙️</button>
+  </div>
+
+  <div class="home-hero">
+    <div class="home-greeting" id="home-greeting">Hey!</div>
+    <div class="home-sub">Ready to track tonight's drinks?</div>
+  </div>
+
+  <div class="home-actions">
+    <button class="btn-primary" onclick="startSession()">Start a session</button>
+  </div>
+
+  <div class="card" style="margin-top: 0.25rem;">
+    <div class="section-label">Discord</div>
+    <div class="settings-row">
+      <span class="settings-row-label">Channel</span>
+      <span class="settings-row-val" id="home-webhook-preview">—</span>
+    </div>
+    <div class="settings-row">
+      <span class="settings-row-label">Status</span>
+      <span class="settings-row-val" id="home-webhook-status" style="color: var(--green);">Connected</span>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     SCREEN: Tracker
+════════════════════════════════════════ -->
+<div id="screen-tracker" class="screen">
+  <div class="topbar">
+    <div class="topbar-left">
+      <div>
+        <div class="session-name" id="display-name"></div>
+        <div class="session-timer" id="session-timer">Session just started</div>
+      </div>
+    </div>
+    <div style="font-size:26px;">🍺</div>
+  </div>
+
+  <div class="stats-grid">
+    <div class="stat">
+      <div class="stat-val" id="stat-total">0</div>
+      <div class="stat-lbl">Drinks</div>
+    </div>
+    <div class="stat">
+      <div class="stat-val" id="stat-types">0</div>
+      <div class="stat-lbl">Types</div>
+    </div>
+    <div class="stat">
+      <div class="stat-val" id="stat-posts">0</div>
+      <div class="stat-lbl">Posts</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="section-label">Log a drink</div>
+    <div class="autocomplete-wrap">
+      <input class="drink-input" id="drink-type" type="text" placeholder="What are you drinking?" autocomplete="off" autocorrect="off" autocapitalize="sentences" />
+      <div class="suggestions" id="suggestions"></div>
+    </div>
+    <div class="qty-row">
+      <button class="qty-btn minus" onclick="changeQty(-1)" aria-label="Decrease">−</button>
+      <div class="qty-center">
+        <span class="qty-num" id="qty-num">1</span>
+        <span class="qty-word" id="qty-word">drink</span>
+      </div>
+      <button class="qty-btn plus" onclick="changeQty(1)" aria-label="Increase">+</button>
+    </div>
+    <button class="btn-primary" id="log-btn" onclick="logDrink()">Log & post to Discord</button>
+    <div class="status" id="status-msg"></div>
+  </div>
+
+  <div class="card">
+    <div class="section-label">This session</div>
+    <div class="log-list" id="log-list">
+      <div class="log-empty">No drinks logged yet</div>
+    </div>
+    <div class="divider"></div>
+    <button class="btn-ghost" onclick="endSession()">End session & post summary</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     SCREEN: Settings
+════════════════════════════════════════ -->
+<div id="screen-settings" class="screen">
+  <div class="topbar">
+    <div class="topbar-left">
+      <button class="icon-btn" onclick="show('screen-home')" aria-label="Back">←</button>
+      <span class="app-title">Settings</span>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="section-label">Your profile</div>
+    <div class="field">
+      <label for="s-name">Name</label>
+      <input id="s-name" type="text" placeholder="Your name" autocomplete="off" autocorrect="off" />
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="section-label">Discord</div>
+    <div class="field">
+      <label for="s-webhook">Webhook URL</label>
+      <input id="s-webhook" type="url" placeholder="https://discord.com/api/webhooks/..." autocomplete="off" autocorrect="off" autocapitalize="none" />
+      <div class="hint">In Discord: channel settings → Integrations → Webhooks → New Webhook → Copy URL</div>
+    </div>
+  </div>
+
+  <div style="padding: 0 1rem;">
+    <button class="btn-primary" onclick="saveSettings()">Save changes</button>
+    <span class="saved-badge" id="saved-badge">Saved ✓</span>
+  </div>
+
+  <div class="card" style="margin-top: 1rem;">
+    <div class="section-label">Danger zone</div>
+    <button class="btn-danger" onclick="clearAllData()">Clear all saved data</button>
+  </div>
+</div>
+
+<script>
+  // ── State ──
+  let sessionName = '', webhookUrl = '';
+  let sessionStart = null, log = [], totalDrinks = 0, postCount = 0, qty = 1;
+  let timerInterval = null;
+
+  // ── Boot ──
+  window.addEventListener('load', () => {
+    if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
+    const saved = loadSettings();
+    if (saved.name && saved.webhook) {
+      applySettings(saved.name, saved.webhook);
+      show('screen-home');
+    } else {
+      show('screen-firstrun');
+    }
+  });
+
+  function loadSettings() {
+    return {
+      name: localStorage.getItem('dt-name') || '',
+      webhook: localStorage.getItem('dt-webhook') || ''
+    };
+  }
+
+  function applySettings(name, webhook) {
+    sessionName = name;
+    webhookUrl = webhook;
+    document.getElementById('home-greeting').textContent = `Hey, ${name}!`;
+    const preview = webhook ? '…' + webhook.slice(-20) : '—';
+    document.getElementById('home-webhook-preview').textContent = preview;
+    document.getElementById('s-name').value = name;
+    document.getElementById('s-webhook').value = webhook;
+  }
+
+  // ── First run ──
+  function saveFirstRun() {
+    const name = document.getElementById('fr-name').value.trim();
+    const webhook = document.getElementById('fr-webhook').value.trim();
+    if (!name) { alert('Please enter your name.'); return; }
+    if (!webhook.startsWith('https://discord.com/api/webhooks/')) {
+      alert('Please paste a valid Discord webhook URL.'); return;
+    }
+    localStorage.setItem('dt-name', name);
+    localStorage.setItem('dt-webhook', webhook);
+    applySettings(name, webhook);
+    show('screen-home');
+  }
+
+  // ── Settings ──
+  function saveSettings() {
+    const name = document.getElementById('s-name').value.trim();
+    const webhook = document.getElementById('s-webhook').value.trim();
+    if (!name) { alert('Please enter your name.'); return; }
+    if (!webhook.startsWith('https://discord.com/api/webhooks/')) {
+      alert('Please paste a valid Discord webhook URL.'); return;
+    }
+    localStorage.setItem('dt-name', name);
+    localStorage.setItem('dt-webhook', webhook);
+    applySettings(name, webhook);
+    const badge = document.getElementById('saved-badge');
+    badge.classList.add('show');
+    setTimeout(() => badge.classList.remove('show'), 2500);
+  }
+
+  function clearAllData() {
+    if (!confirm('This will erase your name and webhook URL. Continue?')) return;
+    localStorage.clear();
+    location.reload();
+  }
+
+  // ── Session ──
+  function startSession() {
+    sessionStart = Date.now();
+    log = []; totalDrinks = 0; postCount = 0; qty = 1;
+    document.getElementById('display-name').textContent = sessionName + "'s session";
+    document.getElementById('qty-num').textContent = '1';
+    document.getElementById('qty-word').textContent = 'drink';
+    document.getElementById('log-list').innerHTML = '<div class="log-empty">No drinks logged yet</div>';
+    document.getElementById('drink-type').value = '';
+    document.getElementById('status-msg').textContent = '';
+    document.getElementById('status-msg').className = 'status';
+    updateStats();
+    show('screen-tracker');
+    clearInterval(timerInterval);
+    timerInterval = setInterval(updateTimer, 15000);
+    updateTimer();
+    postToDiscord(`🍺 **${sessionName}** started a drink tracking session!`);
+  }
+
+  function updateTimer() {
+    const mins = Math.round((Date.now() - sessionStart) / 60000);
+    const el = document.getElementById('session-timer');
+    if (mins < 1) el.textContent = 'Session just started';
+    else if (mins < 60) el.textContent = `Running for ${mins} min${mins !== 1 ? 's' : ''}`;
+    else { const h = Math.floor(mins/60), m = mins%60; el.textContent = `Running for ${h}h ${m}m`; }
+  }
+
+  function changeQty(delta) {
+    qty = Math.max(1, qty + delta);
+    const numEl = document.getElementById('qty-num');
+    numEl.textContent = qty;
+    document.getElementById('qty-word').textContent = qty === 1 ? 'drink' : 'drinks';
+    numEl.classList.remove('pop');
+    void numEl.offsetWidth;
+    numEl.classList.add('pop');
+  }
+
+  async function logDrink() {
+    const type = document.getElementById('drink-type').value.trim() || 'drink';
+    saveRecentDrink(type);
+    closeSuggestions();
+    const btn = document.getElementById('log-btn');
+    btn.textContent = 'Posting…';
+    btn.disabled = true;
+    totalDrinks += qty;
+    const entry = { type, qty, time: new Date() };
+    log.push(entry);
+    updateStats();
+    addLogItem(entry);
+    const drinkLabel = qty === 1 ? `1 ${type}` : `${qty}× ${type}`;
+    const msg = `🍺 **${sessionName}** just had **${drinkLabel}**\n📊 Session total: **${totalDrinks} drink${totalDrinks !== 1 ? 's' : ''}** — ${buildSummary()}`;
+    await postToDiscord(msg);
+    document.getElementById('drink-type').value = '';
+    qty = 1;
+    document.getElementById('qty-num').textContent = '1';
+    document.getElementById('qty-word').textContent = 'drink';
+    btn.textContent = 'Log & post to Discord';
+    btn.disabled = false;
+  }
+
+  async function endSession() {
+    if (log.length === 0) { alert('No drinks logged yet.'); return; }
+    clearInterval(timerInterval);
+    const mins = Math.round((Date.now() - sessionStart) / 60000);
+    const h = Math.floor(mins/60), m = mins%60;
+    const dur = h > 0 ? `${h}h ${m}m` : `${m} min${m !== 1 ? 's' : ''}`;
+    const msg = `🏁 **${sessionName}** wrapped up!\n⏱️ Duration: **${dur}**\n🍺 Total: **${totalDrinks} drink${totalDrinks !== 1 ? 's' : ''}**\n📋 Breakdown: ${buildSummary()}`;
+    await postToDiscord(msg);
+    setTimeout(() => show('screen-home'), 600);
+  }
+
+  function buildSummary() {
+    const counts = {};
+    log.forEach(e => { counts[e.type] = (counts[e.type] || 0) + e.qty; });
+    return Object.entries(counts).map(([t, n]) => `${n}× ${t}`).join(', ');
+  }
+
+  function updateStats() {
+    document.getElementById('stat-total').textContent = totalDrinks;
+    document.getElementById('stat-types').textContent = new Set(log.map(e => e.type)).size;
+    document.getElementById('stat-posts').textContent = postCount;
+  }
+
+  function addLogItem(entry) {
+    const list = document.getElementById('log-list');
+    const empty = list.querySelector('.log-empty');
+    if (empty) empty.remove();
+    const timeStr = entry.time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const item = document.createElement('div');
+    item.className = 'log-item';
+    item.innerHTML = `<span class="log-drink">${entry.type}</span><span class="log-right"><span class="log-qty">+${entry.qty}</span><span class="log-time">${timeStr}</span></span>`;
+    list.insertBefore(item, list.firstChild);
+  }
+
+  async function postToDiscord(message) {
+    const statusEl = document.getElementById('status-msg');
+    try {
+      const res = await fetch(webhookUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content: message, username: 'Beer Bot' })
+      });
+      if (res.ok) {
+        postCount++;
+        updateStats();
+        if (statusEl) { statusEl.textContent = 'Posted to Discord ✓'; statusEl.className = 'status ok'; setTimeout(() => { statusEl.textContent = ''; statusEl.className = 'status'; }, 3000); }
+      } else {
+        if (statusEl) { statusEl.textContent = 'Discord post failed — check settings'; statusEl.className = 'status err'; }
+      }
+    } catch {
+      if (statusEl) { statusEl.textContent = 'Could not reach Discord'; statusEl.className = 'status err'; }
+    }
+  }
+
+
+  // ── Drink suggestions ──
+  const DRINKS = [
+    { name: 'Beer', icon: '🍺' }, { name: 'Lager', icon: '🍺' }, { name: 'IPA', icon: '🍺' },
+    { name: 'Pale Ale', icon: '🍺' }, { name: 'Stout', icon: '🍺' }, { name: 'Porter', icon: '🍺' },
+    { name: 'Sour Beer', icon: '🍺' }, { name: 'Wheat Beer', icon: '🍺' }, { name: 'Pilsner', icon: '🍺' },
+    { name: 'Cider', icon: '🍎' }, { name: 'Hard Cider', icon: '🍎' },
+    { name: 'Wine', icon: '🍷' }, { name: 'Red Wine', icon: '🍷' }, { name: 'White Wine', icon: '🍷' },
+    { name: 'Rosé', icon: '🍷' }, { name: 'Prosecco', icon: '🥂' }, { name: 'Champagne', icon: '🥂' },
+    { name: 'Mimosa', icon: '🥂' }, { name: 'Sangria', icon: '🍷' },
+    { name: 'Vodka Soda', icon: '🥃' }, { name: 'Vodka Cranberry', icon: '🥃' },
+    { name: 'Gin & Tonic', icon: '🥃' }, { name: 'Rum & Coke', icon: '🥃' },
+    { name: 'Whiskey', icon: '🥃' }, { name: 'Whiskey Sour', icon: '🥃' },
+    { name: 'Bourbon', icon: '🥃' }, { name: 'Scotch', icon: '🥃' },
+    { name: 'Tequila', icon: '🥃' }, { name: 'Tequila Shot', icon: '🥃' },
+    { name: 'Margarita', icon: '🍹' }, { name: 'Mojito', icon: '🍹' },
+    { name: 'Daiquiri', icon: '🍹' }, { name: 'Piña Colada', icon: '🍹' },
+    { name: 'Long Island Iced Tea', icon: '🍹' }, { name: 'Cosmopolitan', icon: '🍸' },
+    { name: 'Martini', icon: '🍸' }, { name: 'Negroni', icon: '🍸' },
+    { name: 'Old Fashioned', icon: '🥃' }, { name: 'Manhattan', icon: '🥃' },
+    { name: 'Hard Seltzer', icon: '💧' }, { name: 'White Claw', icon: '💧' },
+    { name: 'Espresso Martini', icon: '☕' }, { name: 'Irish Coffee', icon: '☕' },
+    { name: 'Shot', icon: '🥃' }, { name: 'Jägerbomb', icon: '🥃' },
+  ];
+
+  let recentDrinks = JSON.parse(localStorage.getItem('dt-recent') || '[]');
+
+  function getSuggestions(query) {
+    const q = query.toLowerCase().trim();
+    if (!q) return [];
+    const matches = DRINKS.filter(d => d.name.toLowerCase().includes(q));
+    matches.sort((a, b) => {
+      const aStart = a.name.toLowerCase().startsWith(q);
+      const bStart = b.name.toLowerCase().startsWith(q);
+      if (aStart && !bStart) return -1;
+      if (!aStart && bStart) return 1;
+      return a.name.localeCompare(b.name);
+    });
+    const recents = recentDrinks
+      .filter(r => r.toLowerCase().includes(q) && !matches.find(m => m.name.toLowerCase() === r.toLowerCase()))
+      .map(r => ({ name: r, icon: '🕐' }));
+    return [...recents, ...matches].slice(0, 5);
+  }
+
+  function highlightMatch(text, query) {
+    const idx = text.toLowerCase().indexOf(query.toLowerCase());
+    if (idx === -1) return text;
+    return text.slice(0, idx) + '<span class="sug-match">' + text.slice(idx, idx + query.length) + '</span>' + text.slice(idx + query.length);
+  }
+
+  function renderSuggestions(query) {
+    const box = document.getElementById('suggestions');
+    if (!box) return;
+    const results = getSuggestions(query);
+    if (!results.length) { box.innerHTML = ''; box.classList.remove('open'); return; }
+    box.innerHTML = results.map(d =>
+      `<div class="suggestion-item" onmousedown="pickSuggestion(event,'${d.name.replace(/'/g, "\'")}')">
+        <span class="sug-icon" aria-hidden="true">${d.icon}</span>
+        <span>${highlightMatch(d.name, query)}</span>
+      </div>`
+    ).join('');
+    box.classList.add('open');
+  }
+
+  function pickSuggestion(e, name) {
+    e.preventDefault();
+    const input = document.getElementById('drink-type');
+    input.value = name;
+    closeSuggestions();
+    input.focus();
+  }
+
+  function closeSuggestions() {
+    const box = document.getElementById('suggestions');
+    if (box) { box.innerHTML = ''; box.classList.remove('open'); }
+  }
+
+  function saveRecentDrink(name) {
+    recentDrinks = [name, ...recentDrinks.filter(r => r !== name)].slice(0, 10);
+    localStorage.setItem('dt-recent', JSON.stringify(recentDrinks));
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    const input = document.getElementById('drink-type');
+    if (input) {
+      input.addEventListener('input', () => renderSuggestions(input.value));
+      input.addEventListener('blur', () => setTimeout(closeSuggestions, 150));
+    }
+  });
+
+  function show(id) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    window.scrollTo(0, 0);
+  }
+</script>
+</body>
+</html>
